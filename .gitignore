@@ -1,3 +1,9 @@
-node_modules
-app/node_modules
-app/dist
+# Local-only reference material (proprietary sample flyers) — never commit
+reference/
+test-project.json
+node_modules/
+app/dist/
+app/public/fonts/*.ttf
+app/public/demo/*.jpg
+*.log
+.DS_Store
