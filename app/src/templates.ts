@@ -215,7 +215,7 @@ export const TEMPLATES: Template[] = [
   { id: 'retail-aerial', name: 'Retail Aerial (landscape)', desc: 'Aerial + traffic + demographics', size: 'letter-l', pages: ['retail-aerial'], tags: ['retail', 'lease', 'sale'] },
   { id: 'om', name: 'Offering Memorandum', desc: 'Cover · investment summary · comps · location', size: 'letter', pages: ['om-cover', 'investment-summary', 'comps', 'demographics'], tags: ['sale', 'investment'] },
   { id: 'comps', name: 'Comparables Page', desc: 'Sale comps table + map', size: 'letter', pages: ['comps'], tags: ['sale'] },
-  { id: 'demographics', name: 'Demographics Page', desc: 'Map, radius + tract data', size: 'letter', pages: ['demographics'], tags: ['any'] },
+  { id: 'demographics', name: 'Demographics Page', desc: 'Map, radius + tract data', size: 'letter', pages: ['demographics'], tags: ['investment', 'retail', 'office'] },
   { id: 'tabloid', name: 'Leasing Brochure 11×17', desc: 'Dark band cover · tabloid', size: 'tabloid-l', pages: ['tabloid-cover', 'classic-l-photos'], tags: ['lease', 'industrial'] },
   { id: 'social', name: 'Social Post', desc: '1080×1080', size: 'social', pages: ['social'], tags: ['marketing'] },
   { id: 'email', name: 'Email Banner', desc: '1200×600 header image', size: 'email', pages: ['email-banner'], tags: ['marketing'] },
