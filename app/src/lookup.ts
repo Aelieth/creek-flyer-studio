@@ -12,7 +12,7 @@ function jsonp<T>(url: string, timeout = 15000): Promise<T> {
   });
 }
 export type LookupResult = { patch: Partial<Property>; log: string[] };
-export async function lookupAddress(full: string, censusKey: string): Promise<LookupResult> {
+export async function lookupAddress(full: string, censusKey: string, pinColor = '#d33'): Promise<LookupResult> {
   const log: string[] = []; const patch: Partial<Property> = {};
   let state = '', county = '', tract = '';
   // 1) US Census Geocoder (free, keyless)
@@ -63,13 +63,14 @@ export async function lookupAddress(full: string, censusKey: string): Promise<Lo
     } catch (e) { log.push('ACS failed: ' + (e as Error).message); }
   }
   // 5) Static map image from OSM tiles
-  try { patch.mapImg = await staticMap(lat, lon, 16); log.push('Map rendered (OpenStreetMap)'); }
+  try { patch.mapImg = await staticMap(lat, lon, 16, { pin: pinColor }); log.push('Map rendered (OpenStreetMap)'); }
   catch (e) { log.push('Map render failed: ' + (e as Error).message); }
   return { patch, log };
 }
 const titleCase = (s: string) => s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 // Composite OSM tiles into a single PNG (export-safe, no live iframe needed).
-export async function staticMap(lat: number, lon: number, z: number, W = 1200, H = 800): Promise<string> {
+export async function staticMap(lat: number, lon: number, z: number, o: { gray?: boolean; pin?: string; W?: number; H?: number } = {}): Promise<string> {
+  const W = o.W || 1400, H = o.H || 900;
   const n = 2 ** z; const px = (lon + 180) / 360 * n * 256;
   const r = lat * Math.PI / 180; const py = (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n * 256;
   const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d')!;
@@ -81,8 +82,9 @@ export async function staticMap(lat: number, lon: number, z: number, W = 1200, H
         im.onload = () => { g.drawImage(im, tx * 256 - x0, ty * 256 - y0); res(); }; im.onerror = () => res();
         im.src = `https://tile.openstreetmap.org/${z}/${((tx % n) + n) % n}/${ty}.png`; }));
   await Promise.all(jobs);
+  if (o.gray) { const d = g.getImageData(0, 0, W, H); for (let i = 0; i < d.data.length; i += 4) { const v = d.data[i] * .3 + d.data[i + 1] * .59 + d.data[i + 2] * .11; const t = 0.35; d.data[i] = d.data[i + 1] = d.data[i + 2] = v * (1 - t) + 255 * t; } g.putImageData(d, 0, 0); }
   // pin
-  g.fillStyle = '#d33'; g.strokeStyle = '#fff'; g.lineWidth = 4; g.beginPath();
+  g.fillStyle = o.pin || '#d33'; g.strokeStyle = '#fff'; g.lineWidth = 4; g.beginPath();
   g.arc(W / 2, H / 2 - 28, 18, Math.PI, 0); g.lineTo(W / 2, H / 2); g.closePath(); g.fill(); g.stroke();
   g.fillStyle = '#fff'; g.beginPath(); g.arc(W / 2, H / 2 - 28, 7, 0, 7); g.fill();
   g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(W - 250, H - 26, 250, 26); g.fillStyle = '#333'; g.font = '16px sans-serif';
