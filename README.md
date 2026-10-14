@@ -8,7 +8,8 @@ An in-house builder for commercial real-estate marketing: flyers, brochures, off
 - **One property record** feeds every document, the microsite and the email
 - **Address lookup** auto-fills geocode, county, flood zone, demographics (free Census key) and a branded map
 - **Paste-to-extract:** paste listing text or an email and it extracts price, SF, rate, zoning, highlights and brokers
-- **14 templates / 18 library pages:** sale, lease, multi-tenant availability, land, retail aerial, OM (cover, investment summary, comps, demographics), 11×17 brochure, social, email banner
+- **19 templates / 28 library pages.** The default look is the **Signature** family (Lato + Playfair Display: flyer, brochure, retail). Also: classic band, sale, lease, multi-tenant availability, land, retail aerial / retail package / trade area, OM (cover, investment summary, comps, demographics), 11×17 brochure, social, email banner
+- **Retail tools:** nearby retailers and draws pulled from OpenStreetMap, with toggleable, renamable callout pins and an optional logo per pin; subject star; ODOT/TxDOT traffic counts; 1/3/5-mile rings; ring demographics from Census ACS block groups (free key)
 - **Sizes:** Letter portrait/landscape, Tabloid, A4, Social 1080, Email 1200×600. Any page refits to any size
 - **Editor:** drag, 8-way resize, rotate, smart guides, inline text editing, auto-fit text, image crop/zoom/tint, layers, undo/redo, page reorder
 - **Onboarding:** welcome screen, 5-step guided tour, `?` opens keyboard-shortcut help

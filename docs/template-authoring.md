@@ -33,6 +33,11 @@ Tables: a row `@suites` expands to one row per available suite; `source: 'comps'
 - `flow: 'brokers', flowIdx: n, flowGap: 20` on elements makes columns sit side by side; each column starts `flowGap` px after the widest visible line of the previous one (used for broker contacts; hidden columns collapse).
 - Tables: `rowGap` adds a spacer (with rule) after each non-suite row. If a table is taller than its box it automatically drops the gaps, then tightens row height, so it never runs into the footer.
 
+- `flowEnd: 7` on a rect inside a flow column pins it 7 px right of that column's widest line (the vertical rule between broker contacts in the Signature footer).
+- Vertical stacks: `stack: 'left', stackIdx: n` orders blocks top to bottom. A block with `stackGrow: true` (a table or text) is measured, and everything later in the stack moves up or down by the difference from its box height. When a grow block is hidden (`showIf` empty) its slot plus `stackGap` collapses. `stackMax` is the lowest y the stack may reach; past it, table rows tighten first, then stacked text shrinks (not below 9.5 px).
+- Text: `indent` sets the hanging indent for `•` bullet lines, and `paraGap` adds space between paragraphs. Long hyphenated words can break after a hyphen.
+- Context helpers: `{{subtitle}}` (the property's subtitle, or the full address), `{{salePrice}}`, `{{leaseRateIf}}` and `{{leaseTypeIf}}` (blank when they don't apply to the listing type).
+
 ## Text that always fits
 Set `autoFit: true` on a text element and it shrinks until it fits its box (down to `minSize`). The editor outlines any remaining overflow in red, and export warns about it.
 
