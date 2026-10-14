@@ -26,11 +26,23 @@ export const newProperty = (o: Partial<Property> = {}): Property => ({
   photos: [], mapImg: '', sitePlan: '', aerial: '', status: 'Active', rings: [1, 3, 5], notes: 'Week of 10/5: 3 tours (2 medical, 1 professional office); LOI received on Suite 210 at $18.00 NNN.\nSigns refreshed; listing syndicated to 4 sites; e-blast to 2,400 brokers (31% open rate).\nNext: follow up on Suite 300 full-floor requirement (tenant rep: 12,000 SF need).',
   customFields: [{ label: 'Signage', value: 'Monument & building' }, { label: 'Elevators', value: '2 passenger' }], photoAnn: {}, ...o,
 });
-export const defaultBrand: Brand = { company: 'Your Company', tagline: 'Commercial Real Estate', primary: '#003057', secondary: '#05664f', accent: '#3f8f7b', dark: '#272324', light: '#faf7e8',
-  logo: '', logoLight: '', headFont: 'Playfair Display', bodyFont: 'Lato', website: 'www.example.com', phone: '405.555.0100',
+export const defaultBrand: Brand = { company: 'Creek Price Edwards', tagline: 'Commercial Real Estate', primary: '#003057', secondary: '#05664f', accent: '#3f8f7b', dark: '#272324', light: '#faf7e8',
+  logo: '', logoLight: '', headFont: 'Playfair Display', bodyFont: 'Lato', website: 'creekpe.com', phone: '405.555.0100',
   disclaimer: 'The information contained herein is from sources deemed reliable. No representation is made to the accuracy herein. Photos herein are the property of their respective owners, and use of them without express written consent of the owner is prohibited.', censusKey: '', officeAddress: '100 N Example Ave, Suite 500 | Oklahoma City, OK 73102' };
 export function freshState(): State { const p = newProperty(); return { v: 2, properties: [p], activePropertyId: p.id, brand: defaultBrand, docs: [] }; }
-export async function loadState(): Promise<State> {
+// Default brand logo: the Creek Price Edwards logo as published on creekpe.com, rasterized to PNG so it embeds in PDFs.
+export async function svgToPng(url: string, width = 1600): Promise<string> {
+  const txt = await (await fetch(url)).text(); const im = new Image();
+  await new Promise((res, rej) => { im.onload = res; im.onerror = rej; im.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(txt))); });
+  const c = document.createElement('canvas'); c.width = width; c.height = Math.round(width * (im.naturalHeight || 101) / (im.naturalWidth || 358)); c.getContext('2d')!.drawImage(im, 0, 0, c.width, c.height); return c.toDataURL('image/png');
+}
+async function withDefaultLogo(s: State): Promise<State> {
+  if ((s.brand.logo && s.brand.logoLight) || localStorage.getItem('cfs.logoCleared')) return s;
+  try { const base = import.meta.env.BASE_URL + 'brand/'; const [logo, logoLight] = await Promise.all([s.brand.logo ? s.brand.logo : svgToPng(base + 'creekpe-logo.svg'), s.brand.logoLight ? s.brand.logoLight : svgToPng(base + 'creekpe-logo-white.svg')]);
+    return { ...s, brand: { ...s.brand, logo, logoLight, company: s.brand.company === 'Your Company' ? 'Creek Price Edwards' : s.brand.company, website: s.brand.website === 'www.example.com' ? 'creekpe.com' : s.brand.website } }; } catch { return s; }
+}
+export async function loadState(): Promise<State> { return withDefaultLogo(await loadState0()); }
+async function loadState0(): Promise<State> {
   try { const s = await idbGet('cfs.state.v2'); if (s && s.v === 2) return { ...s, brand: { ...defaultBrand, ...s.brand }, properties: s.properties.map((p: Property) => newProperty({ ...p, pois: p.pois || [], trafficPts: p.trafficPts || [] })) }; } catch { /* ignore */ }
   const st = freshState();
   try { // first run: load bundled CC0 demo photos so templates look real

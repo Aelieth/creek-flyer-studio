@@ -22,7 +22,11 @@ type Tab = 'property' | 'brand' | 'templates' | 'design' | 'publish';
 const TABS: [Tab, string][] = [['property', 'Listing'], ['brand', 'Brand'], ['templates', 'Templates'], ['design', 'Design'], ['publish', 'Publish']];
 export default function App() {
   const [s, setS] = useState<State | null>(null); const [tab, setTab] = useState<Tab>('property'); const [docId, setDocId] = useState<string | null>(null);
-  useEffect(() => { Promise.all([loadState(), loadFonts()]).then(([st]) => { setS(st); setDocId(st.docs[0]?.id ?? null); (window as any).__cfs = { get: () => st }; }); }, []);
+  useEffect(() => { Promise.all([loadState(), loadFonts()]).then(([st0]) => { let st = st0;
+    if (!st.docs.length && !localStorage.getItem('cfs.seeded')) { // first run: one sample document so the listing workspace isn't empty
+      localStorage.setItem('cfs.seeded', '1'); const t = TEMPLATES.find(x => x.id === 'exec-brochure')!; const pr = st.properties[0]; const size = sizeOf(t.size);
+      st = { ...st, docs: [{ id: uid(), name: `${pr.name} – ${t.name}`, templateId: t.id, propertyId: pr.id, size, pages: makeDocPages(t, size), updated: Date.now(), access: 'Team' }] }; }
+    setS(st); setDocId(st.docs[0]?.id ?? null); (window as any).__cfs = { get: () => st }; }); }, []);
   useEffect(() => { if (s) { saveState(s); (window as any).__cfs = { get: () => s, set: (n: State) => setS(n) }; } }, [s]);
   const [sub, setSub] = useState<Sub>('documents'); const [picker, setPicker] = useState(false);
   const [welcome, closeWelcome] = useWelcome(); const [tour, setTour] = useState<number | null>(null); const [help, setHelp] = useState(false);
@@ -32,7 +36,7 @@ export default function App() {
       const d: Doc = { id: uid(), name: `${active.name} – ${t.name}`, templateId: t.id, propertyId: active.id, size, pages: makeDocPages(t, size), updated: Date.now() }; setS({ ...s, docs: [d] }); setDocId(d.id); }
     else if (st.tab === 'design' && s && !docId) setDocId(s.docs[0].id); };
   (window as any).__cfsQA = { TEMPLATES, makeDocPages, sizeOf, buildPdf };
-  if (!s) return <div className="loading">Loading Creek Flyer Studio…</div>;
+  if (!s) return <div className="loading"><img src={`${import.meta.env.BASE_URL}brand/creekpe-logo.svg`} alt="Creek Price Edwards" /><span className="spinner" />Loading Creek Flyer Hub…</div>;
   const active = s.properties.find(p => p.id === s.activePropertyId) || s.properties[0];
   const updP = (f: (p: Property) => Property) => setS(x => x && ({ ...x, properties: x.properties.map(p => p.id === active.id ? f(p) : p) }));
   const setB = (f: (b: Brand) => Brand) => setS(x => x && ({ ...x, brand: f(x.brand) }));
@@ -46,9 +50,9 @@ export default function App() {
   const softDelete = (id: string) => { setS({ ...s, docs: s.docs.map(d => d.id === id ? { ...d, deleted: Date.now() } : d) }); if (docId === id) setDocId(null); };
   return <div className="app">
     <header>
-      <div className="brandmark"><span style={{ background: s.brand.primary }} />Creek Flyer Studio</div>
+      <a className="brandmark" href="./" title="Creek Flyer Hub · Creek Price Edwards" onClick={e => { e.preventDefault(); setTab('property'); setSub('documents'); }}><img src={`${import.meta.env.BASE_URL}brand/creekpe-logo-white.svg`} alt="Creek Price Edwards" /><span className="appname">Flyer Hub</span></a>
       <nav>{TABS.map(([t, l], i) => <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}><i>{i + 1}</i>{l}</button>)}</nav>
-      <div className="hint">{active.name} · saved in this browser</div>
+      <div className="hint" title="Your work is saved in this browser"><b>{active.name}</b><small>Saved in this browser</small></div>
       <button className="helpbtn" title="Help & keyboard shortcuts (?)" onClick={() => setHelp(true)}>?</button>
     </header>
     {welcome && <Welcome onClose={closeWelcome} onTour={() => { closeWelcome(); goStep(0); }}
