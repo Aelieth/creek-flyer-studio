@@ -9,6 +9,10 @@ import { Editor } from './Editor';
 import { Publish } from './Publish';
 import { makeDocPages, sizeOf } from './templates';
 import { SIZES } from './types';
+import { Welcome, TourCard, Shortcuts, TOUR, useHelpKey, useWelcome } from './Help';
+import { newProperty } from './store';
+import { TEMPLATES } from './templates';
+import { useCallback } from 'react';
 import './app.css';
 type Tab = 'property' | 'brand' | 'templates' | 'design' | 'publish';
 const TABS: [Tab, string][] = [['property', 'Property'], ['brand', 'Brand'], ['templates', 'Templates'], ['design', 'Design'], ['publish', 'Publish']];
@@ -16,6 +20,12 @@ export default function App() {
   const [s, setS] = useState<State | null>(null); const [tab, setTab] = useState<Tab>('property'); const [docId, setDocId] = useState<string | null>(null);
   useEffect(() => { Promise.all([loadState(), loadFonts()]).then(([st]) => { setS(st); setDocId(st.docs[0]?.id ?? null); (window as any).__cfs = { get: () => st }; }); }, []);
   useEffect(() => { if (s) { saveState(s); (window as any).__cfs = { get: () => s, set: (n: State) => setS(n) }; } }, [s]);
+  const [welcome, closeWelcome] = useWelcome(); const [tour, setTour] = useState<number | null>(null); const [help, setHelp] = useState(false);
+  useHelpKey(useCallback(() => setHelp(true), []));
+  const goStep = (i: number) => { setTour(i); const st = TOUR[i]; setTab(st.tab);
+    if (st.tab === 'design' && s && !s.docs.length) { const active = s.properties.find(p => p.id === s.activePropertyId) || s.properties[0]; const t = TEMPLATES[0]; const size = sizeOf(t.size);
+      const d: Doc = { id: uid(), name: `${active.name} – ${t.name}`, templateId: t.id, propertyId: active.id, size, pages: makeDocPages(t, size), updated: Date.now() }; setS({ ...s, docs: [d] }); setDocId(d.id); }
+    else if (st.tab === 'design' && s && !docId) setDocId(s.docs[0].id); };
   if (!s) return <div className="loading">Loading Creek Flyer Studio…</div>;
   const active = s.properties.find(p => p.id === s.activePropertyId) || s.properties[0];
   const updP = (f: (p: Property) => Property) => setS(x => x && ({ ...x, properties: x.properties.map(p => p.id === active.id ? f(p) : p) }));
@@ -27,7 +37,12 @@ export default function App() {
       <div className="brandmark"><span style={{ background: s.brand.primary }} />Creek Flyer Studio</div>
       <nav>{TABS.map(([t, l], i) => <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}><i>{i + 1}</i>{l}</button>)}</nav>
       <div className="hint">{active.name} · saved in this browser</div>
+      <button className="helpbtn" title="Help & keyboard shortcuts (?)" onClick={() => setHelp(true)}>?</button>
     </header>
+    {welcome && <Welcome onClose={closeWelcome} onTour={() => { closeWelcome(); goStep(0); }}
+      onBlank={() => { closeWelcome(); const p = newProperty({ name: 'New Property', address: '', city: '', zip: '', description: '', highlights: '', locationDescription: '', photos: [], suites: [], comps: [], dem: {} }); setS({ ...s, properties: [...s.properties, p], activePropertyId: p.id }); setTab('property'); }} />}
+    {tour !== null && <TourCard i={tour} onNext={() => goStep(tour + 1)} onPrev={() => goStep(tour - 1)} onEnd={() => setTour(null)} />}
+    {help && <Shortcuts onClose={() => setHelp(false)} onTour={() => { setHelp(false); goStep(0); }} />}
     {tab === 'property' && <PropertyTab props={s.properties} active={active} b={s.brand} upd={updP} setActive={id => setS({ ...s, activePropertyId: id })}
       add={p => setS({ ...s, properties: [...s.properties, p], activePropertyId: p.id })} remove={id => setS({ ...s, properties: s.properties.filter(p => p.id !== id), activePropertyId: s.properties.find(p => p.id !== id)!.id })} next={() => setTab('templates')} />}
     {tab === 'brand' && <BrandTab b={s.brand} setB={setB} state={s} load={n => { setS(n); setDocId(n.docs[0]?.id ?? null); }} />}
