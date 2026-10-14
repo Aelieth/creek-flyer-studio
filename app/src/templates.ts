@@ -130,7 +130,7 @@ const P: PageDef[] = [
     TB(492, 712, 276, 200, 'Price:|{{price}}\nAcreage:|{{lotAcres}}\nZoning:|{{zoning}}\nFrontage / Traffic:|{{traffic}}\nFlood Zone:|{{floodZone}}\nCounty:|{{county}}', { rowH: 32 }),
     ...classicFooter()] },
   { id: 'retail-aerial', name: 'Retail · Aerial + traffic (landscape)', size: 'letter-l', make: () => [
-    I(0, 0, 640, 816, 'aerial'), R(640, 0, 416, 816, '$secondary'),
+    I(0, 0, 640, 816, 'retailMap'), R(640, 0, 416, 816, '$secondary'),
     I(670, 30, 250, 50, 'logoLight', { fit: 'contain', fx: 0 }),
     T(670, 110, 356, 24, '{{forLabel|upper}}', { font: '$head', size: 18, color: '$accent', ls: 12 }),
     T(670, 138, 356, 80, '{{name}}', { font: '$head', weight: 600, size: 32, color: '#ffffff', lh: 1.1, autoFit: true }),
@@ -138,11 +138,26 @@ const P: PageDef[] = [
     R(670, 276, 60, 3, '$accent'),
     ...[['{{priceOrRate}}', 'Price / Rate'], ['{{availableSf}}', 'Available'], ['{{traffic}}', 'Traffic Count']].flatMap(([v, l], i) => [
       T(670, 300 + i * 70, 356, 34, v, { font: '$head', weight: 600, size: 26, color: '#ffffff', autoFit: true }), T(670, 334 + i * 70, 356, 18, l, { size: 11, color: '#9fb3c6', upper: true, ls: 10 })]),
-    TB(670, 520, 356, 110, 'Demographics|1 Mi|3 Mi|5 Mi\nPopulation|{{dem_pop1}}|{{dem_pop3}}|{{dem_pop5}}\nHouseholds|{{dem_hh1}}|{{dem_hh3}}|{{dem_hh5}}\nAvg HH Income|{{dem_inc1}}|{{dem_inc3}}|{{dem_inc5}}',
-      { cols: [1.5, 1, 1, 1], aligns: ['left', 'right', 'right', 'right'], header: true, headColor: '$accent', color: '#ffffff', labelColor: '#ffffff', rule: '#33557a', rowH: 26, size: 11, skipEmpty: false }),
+    TB(670, 512, 356, 160, 'Demographics|1 Mi|3 Mi|5 Mi\nPopulation|{{dem_pop1}}|{{dem_pop3}}|{{dem_pop5}}\nHouseholds|{{dem_hh1}}|{{dem_hh3}}|{{dem_hh5}}\nMedian HH Inc.|{{dem_med1}}|{{dem_med3}}|{{dem_med5}}\nAvg HH Income|{{dem_inc1}}|{{dem_inc3}}|{{dem_inc5}}\nDaytime Pop.|{{dem_day1}}|{{dem_day3}}|{{dem_day5}}',
+      { cols: [1.5, 1, 1, 1], aligns: ['left', 'right', 'right', 'right'], header: true, headColor: '$accent', color: '#ffffff', labelColor: '#ffffff', rule: '#33557a', rowH: 26, size: 11, skipEmpty: true }),
     ...[1, 2].flatMap(n => [T(670 + (n - 1) * 180, 690, 175, 20, `{{broker${n}Name|upper}}`, { font: 'Barlow Condensed', weight: 600, size: 15, color: '#ffffff' }),
       T(670 + (n - 1) * 180, 710, 175, 40, `{{broker${n}Phone}}\n{{broker${n}Email}}`, { font: 'Barlow Condensed', size: 13, color: '#c9d6e2', lh: 1.25, autoFit: true })]),
     T(670, 780, 356, 24, '{{disclaimer}}', { font: 'Barlow Condensed', size: 7, color: '#8ea3b8', lh: 1.2, autoFit: true })] },
+  { id: 'retail-cotenancy', name: 'Retail · Co-tenancy aerial (landscape)', size: 'letter-l', make: () => [
+    I(0, 0, 1056, 736, 'retailMap'), R(0, 0, 1056, 70, '$secondary', { opacity: 0.92 }),
+    T(30, 0, 700, 70, '{{name|upper}}', { font: '$head', weight: 600, size: 28, color: '#ffffff', valign: 'middle', autoFit: true, ls: 2 }),
+    T(700, 0, 326, 70, '{{fullAddress}}', { size: 13, color: '#d9e2ea', valign: 'middle', align: 'right', autoFit: true }),
+    R(0, 736, 1056, 80, '#ffffff'), R(0, 736, 1056, 4, '$primary'),
+    ...[1, 2, 3].flatMap(n => [T(30 + (n - 1) * 230, 752, 220, 20, `{{broker${n}Name|upper}}`, { font: 'Barlow Condensed', weight: 600, size: 15, color: '$secondary' }),
+      T(30 + (n - 1) * 230, 772, 220, 36, `{{broker${n}Phone}}\n{{broker${n}Email}}`, { font: 'Barlow Condensed', size: 13, color: '#414042', lh: 1.2, autoFit: true })]),
+    I(746, 750, 280, 52, 'logo', { fit: 'contain', fx: 1 })] },
+  { id: 'retail-demographics', name: 'Retail · Ring demographics', size: 'letter', make: () => [
+    ...classicHeader(), sectionHead(35, 175, 746, 'Trade Area Demographics'), R(35, 197, 746, 4, '$light'),
+    I(35, 214, 746, 430, 'ringMap', { stroke: '#d0d7de', sw: 1 }),
+    TB(35, 664, 746, 220, 'Demographics|1 Mile|3 Miles|5 Miles\nTotal Population|{{dem_pop1}}|{{dem_pop3}}|{{dem_pop5}}\nPopulation Growth (2019–23)|{{dem_growth1}}|{{dem_growth3}}|{{dem_growth5}}\nTotal Households|{{dem_hh1}}|{{dem_hh3}}|{{dem_hh5}}\nMedian HH Income|{{dem_med1}}|{{dem_med3}}|{{dem_med5}}\nAverage HH Income|{{dem_inc1}}|{{dem_inc3}}|{{dem_inc5}}\nDaytime Population|{{dem_day1}}|{{dem_day3}}|{{dem_day5}}',
+      { cols: [2, 1, 1, 1], aligns: ['left', 'right', 'right', 'right'], header: true, headColor: '#ffffff', headFill: '$secondary', rowH: 30, skipEmpty: true }),
+    T(35, 892, 746, 30, 'Sources: U.S. Census Bureau ACS 5-year estimates (2023; growth vs. 2019), aggregated by block group within each radius. Daytime population entered by broker. Map © OpenStreetMap contributors.', { size: 9, color: '#777777', lh: 1.3 }),
+    ...classicFooter()] },
   { id: 'om-cover', name: 'Investment Summary · OM cover', size: 'letter', make: () => [
     I(0, 0, W, 1056, 'photo:0'), R(0, 0, W, 1056, '$secondary', { opacity: 0.55 }),
     I(56, 56, 320, 64, 'logoLight', { fit: 'contain', fx: 0 }),
@@ -177,7 +192,7 @@ const P: PageDef[] = [
     ...[['{{population}}', 'Census tract population'], ['{{medianIncome}}', 'Tract median HH income'], ['{{floodZone}}', 'FEMA flood zone']].flatMap(([v, l], i) => [
       R(35 + i * 252, 790, 242, 90, '#f3f6f5'), T(35 + i * 252, 806, 242, 34, v, { font: '$head', weight: 600, size: 22, color: '$primary', align: 'center', autoFit: true }),
       T(35 + i * 252, 846, 242, 20, l, { size: 11, align: 'center', color: '#5b6573' })]),
-    T(35, 892, 746, 30, 'Sources: U.S. Census Bureau (ACS 5-yr), FEMA NFHL. Map © OpenStreetMap contributors. Radius demographics entered by broker.', { size: 9, color: '#777777' }),
+    T(35, 892, 746, 30, 'Sources: U.S. Census Bureau (ACS 5-yr), FEMA NFHL. Map © OpenStreetMap contributors. Radius demographics: Census ACS block groups within each ring.', { size: 9, color: '#777777' }),
     ...classicFooter()] },
   { id: 'tabloid-cover', name: 'Leasing Brochure · Dark band cover', size: 'tabloid-l', make: () => [
     R(0, 0, 1632, 150, '#2e3540'), T(0, 30, 1632, 70, '{{name|upper}}', { font: 'Montserrat', weight: 800, size: 54, color: '#ffffff', align: 'center', ls: 30, autoFit: true }),
@@ -213,6 +228,8 @@ export const TEMPLATES: Template[] = [
   { id: 'availability', name: 'Multi-Tenant Availability', desc: 'Site plan + live suites table', size: 'letter', pages: ['availability', 'classic-photos'], tags: ['lease', 'retail', 'multi-tenant'] },
   { id: 'land', name: 'Land for Sale', desc: 'Aerial hero · acreage callout', size: 'letter', pages: ['land', 'demographics'], tags: ['sale', 'land'] },
   { id: 'retail-aerial', name: 'Retail Aerial (landscape)', desc: 'Aerial + traffic + demographics', size: 'letter-l', pages: ['retail-aerial'], tags: ['retail', 'lease', 'sale'] },
+  { id: 'retail-package', name: 'Retail Package', desc: 'Co-tenancy aerial · traffic · ring demographics', size: 'letter-l', pages: ['retail-cotenancy', 'retail-aerial'], tags: ['retail', 'lease', 'sale'] },
+  { id: 'retail-rings', name: 'Retail Trade Area', desc: '1/3/5-mile ring map + full demographics', size: 'letter', pages: ['retail-demographics', 'classic-photos'], tags: ['retail', 'investment'] },
   { id: 'om', name: 'Offering Memorandum', desc: 'Cover · investment summary · comps · location', size: 'letter', pages: ['om-cover', 'investment-summary', 'comps', 'demographics'], tags: ['sale', 'investment'] },
   { id: 'comps', name: 'Comparables Page', desc: 'Sale comps table + map', size: 'letter', pages: ['comps'], tags: ['sale'] },
   { id: 'demographics', name: 'Demographics Page', desc: 'Map, radius + tract data', size: 'letter', pages: ['demographics'], tags: ['investment', 'retail', 'office'] },
