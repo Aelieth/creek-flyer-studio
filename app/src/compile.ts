@@ -21,6 +21,7 @@ export function context(p: Property, b: Brand): Record<string, string> {
   c.cityStateZip = [p.city, [p.state, p.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   c.fullAddress = [p.address, c.cityStateZip].filter(Boolean).join(', ');
   c.subtitle = p.subtitle || c.fullAddress;
+  c.details = (p.details || '').split('\n').filter(l => l.trim()).map(l => l.includes('|') ? l : l.replace(/:\s*/, ':|')).join('\n');
   c.forLabel = p.listing === 'Sale' ? 'For Sale' : p.listing === 'Lease' ? 'For Lease' : 'For Sale or Lease';
   c.priceOrRate = p.listing === 'Lease' ? p.leaseRate : p.price;
   c.salePrice = p.listing === 'Lease' ? '' : p.price; c.leaseRateIf = p.listing === 'Sale' ? '' : p.leaseRate; c.leaseTypeIf = p.listing === 'Sale' ? '' : p.leaseType;
@@ -224,7 +225,8 @@ export function compilePage(els0: El[], p: Property, b: Brand, editing: boolean)
 }
 const phLabel = (s: string) => s === 'logo' || s === 'logoLight' ? 'Logo · Brand tab' : s === 'map' ? 'Map · run address lookup' : s === 'sitePlan' ? 'Site plan · Property tab' : s.startsWith('photo:') ? `Photo ${+s.slice(6) + 1} · Property tab` : 'Image';
 function tableRows(el: TableEl, c: Record<string, string>): string[][] {
-  return el.rows.split('\n').filter(r => r.trim()).flatMap(r => r.trim() === '@suites' ? (JSON.parse(c.__suitesAvail || '[]') as string[]).map(x => '\u0001' + x) : [r]).map(r => splitCells(r).map(x => resolve(x.trim().replace(/\\n/g, '\n'), c).replace(/\\n/g, '\n')));
+  const src = el.override === 'details' && (c.details || '').trim() ? c.details : el.rows;
+  return src.split('\n').filter(r => r.trim()).flatMap(r => r.trim() === '@suites' ? (JSON.parse(c.__suitesAvail || '[]') as string[]).map(x => '\u0001' + x) : [r]).map(r => splitCells(r).map(x => resolve(x.trim().replace(/\\n/g, '\n'), c).replace(/\\n/g, '\n')));
 }
 // Tables always fit their box: if the content is taller than el.h, drop the spacer gaps, then tighten rows.
 function compileTable(el: TableEl, c: Record<string, string>, b: Brand, prims: Prim[], xf: Xf) {

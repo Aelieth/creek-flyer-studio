@@ -27,7 +27,7 @@ export const newProperty = (o: Partial<Property> = {}): Property => ({
 });
 export const defaultBrand: Brand = { company: 'Your Company', tagline: 'Commercial Real Estate', primary: '#003057', secondary: '#05664f', accent: '#3f8f7b', dark: '#272324', light: '#faf7e8',
   logo: '', logoLight: '', headFont: 'Playfair Display', bodyFont: 'Lato', website: 'www.example.com', phone: '405.555.0100',
-  disclaimer: 'The information contained herein is from sources deemed reliable. No representation is made to the accuracy herein. Photos herein are the property of their respective owners, and use of them without express written consent of the owner is prohibited.', censusKey: '' };
+  disclaimer: 'The information contained herein is from sources deemed reliable. No representation is made to the accuracy herein. Photos herein are the property of their respective owners, and use of them without express written consent of the owner is prohibited.', censusKey: '', officeAddress: '100 N Example Ave, Suite 500 | Oklahoma City, OK 73102' };
 export function freshState(): State { const p = newProperty(); return { v: 2, properties: [p], activePropertyId: p.id, brand: defaultBrand, docs: [] }; }
 export async function loadState(): Promise<State> {
   try { const s = await idbGet('cfs.state.v2'); if (s && s.v === 2) return { ...s, brand: { ...defaultBrand, ...s.brand }, properties: s.properties.map((p: Property) => newProperty({ ...p, pois: p.pois || [], trafficPts: p.trafficPts || [] })) }; } catch { /* ignore */ }
@@ -35,7 +35,7 @@ export async function loadState(): Promise<State> {
   try { // first run: load bundled CC0 demo photos so templates look real
     const urls = ['office-1', 'office-2', 'retail-1', 'industrial-1', 'aerial-1'].map(n => `${import.meta.env.BASE_URL}demo/${n}.jpg.b64`);
     const data = await Promise.all(urls.map(async u => 'data:image/jpeg;base64,' + (await (await fetch(u)).text()).trim()));
-    st.properties[0].photos = data.slice(0, 4); st.properties[0].aerial = data[4];
+    st.properties[0].photos = data.slice(0, 5); st.properties[0].aerial = data[4];
   } catch { /* offline: no demo photos */ }
   try { // sample co-tenancy + ring maps for the demo record
     const p = st.properties[0]; const to = new Promise<never>((_, r) => setTimeout(() => r(new Error('timeout')), 9000));

@@ -49,7 +49,7 @@ const anyRows = 'Sale Price:|{{price}}\n' + leaseRows;
 const SIG_LH = 17 / 12;
 const sigHeader = (pg: string): El[] => [
   T(36, 36.4, 560, 38, '{{name}}', { font: '$body', size: 30, color: '$primary', lh: 1.2, ls: -0.6, autoFit: true, name: 'title' }),
-  T(36, 74.2, 560, 18, '{{subtitle}}', { font: '$body', size: 14, color: '$dark', lh: 1.2, autoFit: true, name: 'subtitle' }),
+  T(36, 74.2, 560, 24, '{{subtitle}}', { font: '$body', size: 14, color: '$dark', lh: 1.2, autoFit: true, name: 'subtitle' }),
   T(560, 35.9, 220, 36, '{{forLabel}}', { font: '$head', size: 26, color: '$primary', align: 'right', lh: 1.333, autoFit: true, name: 'listing label' }),
   T(600, 998.2, 180, 18, pg, { font: '$body', size: 14, color: '#929091', align: 'right', lh: 1.2, name: 'page number' }),
 ];
@@ -70,15 +70,59 @@ const SIG_DETAILS = 'Sale Price:|{{salePrice}}\nLease Rate:|{{leaseRateIf}}\nLea
 const sigHead = (x: number, y: number, text: string, o: Partial<N<TextEl>> = {}): El => T(x, y, 360, 30, text, { font: '$body', size: 24, color: '$dark', lh: 1.2, ...o });
 const sigBullets = (y: number, text: string, h: number, o: Partial<N<TextEl>> = {}): El =>
   T(41, y, 359, h, text, { font: '$body', size: 12, color: '$dark', lh: SIG_LH, indent: 15, paraGap: 5, ...o });
+
+// ----- "Signature Brochure" family: spaced-caps address header, logo top right, section title, broker block bottom right -----
+const broHeader = (title: string): El[] => [
+  T(36, 38.2, 540, 20, '{{name|upper}}', { font: '$body', size: 16, color: '$dark', ls: 24.5, lh: 1.2, autoFit: true, name: 'title' }),
+  T(36, 62.1, 560, 14, '{{subtitle|upper}}', { font: '$body', size: 11, color: '$dark', ls: 26.8, lh: 1.2, autoFit: true, name: 'subtitle' }),
+  I(597, 38, 183, 51, 'logo', { fit: 'contain', fx: 1, name: 'logo right' }),
+  T(36, 113.3, 560, 24, title, { font: '$body', size: 20, color: '$primary', ls: 9.7, lh: 1.2, name: 'section title' }),
+];
+const broFooter = (): El[] => [
+  ...[[1, 484], [2, 636], [3, 332]].flatMap(([n, x]) => [
+    T(x, 934.2, 150, 16, `{{broker${n}Name|upper}}`, { font: '$body', weight: 700, size: 12, color: '$primary', ls: 15.75, lh: 1.2, autoFit: true, showIf: `{{broker${n}Name}}` }),
+    T(x, 950.7, 150, 34, `{{broker${n}Phone}}\n{{broker${n}Email}}`, { font: '$body', size: 11, color: '$dark', lh: 16 / 11, autoFit: true, showIf: `{{broker${n}Name}}` })]),
+  R(36, 994, 744, 2, '$dark'),
+  T(36, 1007.1, 744, 14, '{{officeAddress|upper}}{{phone|pre: | }}{{website|pre: | |upper}}', { font: '$body', weight: 700, size: 10, color: '$dark', ls: 19.6, lh: 1.2, autoFit: true, name: 'office line' }),
+];
+const broDemo = (y: number, head: string, rows: string): El[] => [
+  TB(36, y, 744, 23, `${head}|1 Mile|3 Miles|5 Miles`, { cols: [249, 102, 105, 102], aligns: ['left', 'right', 'right', 'right'], font: '$head', size: 14, rowH: 23, labelWeight: 400, labelColor: '$dark', color: '$dark', rule: '$light', ruleW: 2, skipEmpty: false }),
+  TB(36, y + 25.2, 744, 92, rows, { cols: [249, 102, 105, 102], aligns: ['left', 'right', 'right', 'right'], font: '$body', size: 12, rowH: 23, labelWeight: 400, labelColor: '$dark', color: '$dark', rule: '$light', ruleW: 1, skipEmpty: true }),
+];
 export type PageDef = { id: string; name: string; size: string; make: () => El[] };
 const P: PageDef[] = [
+  { id: 'bro-summary', name: 'Signature Brochure · Executive summary', size: 'letter', make: () => {
+    const st = (i: number, grow = false, showIf?: string) => ({ stack: 'left', stackIdx: i, stackGrow: grow, stackMax: 905, ...(showIf ? { showIf } : {}) });
+    return [
+      ...broHeader('Executive Summary'), I(36, 152, 744, 340, 'photo:0', { name: 'hero' }),
+      sigHead(36, 505.3, 'Details', st(0)),
+      TB(36, 544.1, 364, 125, SIG_DETAILS, { ...st(1, true), override: 'details', size: 14, rowH: 25, cols: [1, 1], labelWeight: 400, labelColor: '$dark', color: '$dark', rule: '$light', ruleW: 1, font: '$body' }),
+      sigHead(36, 680.3, 'Highlights', st(2, false, '{{highlights}}')),
+      sigBullets(718.9, '{{highlights|bullets}}', 60, { ...st(3, true, '{{highlights}}'), size: 14, lh: 19.5 / 14, paraGap: 5.5, indent: 15, stackGap: 48 }),
+      sigHead(416, 505.3, 'Overview'),
+      T(416, 544.9, 354, 330, '{{description}}', { font: '$body', size: 14, color: '$dark', lh: 19.5 / 14, align: 'justify', autoFit: true, name: 'overview' }),
+      ...broFooter()];
+  } },
+  { id: 'bro-photos', name: 'Signature Brochure · Additional photos', size: 'letter', make: () => [
+    ...broHeader('Additional Photos'), I(36, 152, 364, 376, 'photo:1'), I(416, 152, 364, 376, 'photo:2'), I(36, 544, 364, 376, 'photo:3'), I(416, 544, 364, 376, 'photo:4'), ...broFooter()] },
+  { id: 'bro-plans', name: 'Signature Brochure · Floor plans', size: 'letter', make: () => [
+    ...broHeader('Floor Plans'), I(36, 152, 744, 768, 'sitePlan', { fit: 'contain' }), ...broFooter()] },
+  { id: 'bro-map', name: 'Signature Brochure · Location map', size: 'letter', make: () => [
+    ...broHeader('Location Map'), I(36, 152, 744, 768, 'map'), ...broFooter()] },
+  { id: 'bro-demo', name: 'Signature Brochure · Demographics map & report', size: 'letter', make: () => [
+    ...broHeader('Demographics Map & Report'), I(36, 152, 744, 376, 'ringMap'),
+    ...broDemo(543.7, 'Population', 'Total Population|{{dem_pop1}}|{{dem_pop3}}|{{dem_pop5}}\nPopulation Growth (2019–23)|{{dem_growth1}}|{{dem_growth3}}|{{dem_growth5}}\nDaytime Population|{{dem_day1}}|{{dem_day3}}|{{dem_day5}}'),
+    ...broDemo(677.7, 'Households & Income', 'Total Households|{{dem_hh1}}|{{dem_hh3}}|{{dem_hh5}}\nMedian HH Income|{{dem_med1}}|{{dem_med3}}|{{dem_med5}}\nAverage HH Income|{{dem_inc1}}|{{dem_inc3}}|{{dem_inc5}}'),
+    T(41, 800, 700, 14, 'U.S. Census Bureau, American Community Survey 5-year (2023), block groups within each radius', { font: '$body', size: 10, italic: true, color: '$dark', lh: 1.2 }),
+    ...broFooter()] },
+
   { id: 'sig-overview', name: 'Signature · Overview', size: 'letter', make: () => {
     const st = (i: number, grow = false, showIf?: string) => ({ stack: 'left', stackIdx: i, stackGrow: grow, stackMax: 905, ...(showIf ? { showIf } : {}) });
     return [
       ...sigHeader('1'),
       I(36, 132, 744, 340, 'photo:0', { name: 'hero' }),
       sigHead(36, 505.3, 'Details', st(0)),
-      TB(36, 543.9, 364, 92, SIG_DETAILS, { ...st(1, true), size: 12, rowH: 23, cols: [1, 1], labelWeight: 400, labelColor: '$dark', color: '$dark', rule: '$light', ruleW: 1, font: '$body' }),
+      TB(36, 543.9, 364, 92, SIG_DETAILS, { ...st(1, true), override: 'details', size: 12, rowH: 23, cols: [1, 1], labelWeight: 400, labelColor: '$dark', color: '$dark', rule: '$light', ruleW: 1, font: '$body' }),
       sigHead(36, 635.3, 'Highlights', { ...st(2, false, '{{highlights}}') }),
       sigBullets(672.9, '{{highlights|bullets}}', 40, { ...st(3, true, '{{highlights}}'), stackGap: 48 }),
       sigHead(36, 719, 'Location Description', { ...st(4, false, '{{locationDescription}}') }),
@@ -92,6 +136,8 @@ const P: PageDef[] = [
     I(36, 132, 364, 351, 'photo:1'), I(416, 132, 364, 351, 'photo:2'),
     I(36, 499, 237, 351, 'photo:3'), I(289, 499, 238, 351, 'photo:4'), I(543, 499, 237, 351, 'photo:5'),
     ...sigFooter()] },
+  { id: 'sig-photos3x2', name: 'Signature · Photos (3 × 2)', size: 'letter', make: () => [
+    ...sigHeader('2'), ...[132, 499].flatMap((y, r) => [36, 289, 543].map((x, i) => I(x, y, i === 1 ? 238 : 237, 351, `photo:${1 + r * 3 + i}`))), ...sigFooter()] },
   { id: 'sig-photos6', name: 'Signature · Photos (2 × 3)', size: 'letter', make: () => [
     ...sigHeader('3'),
     ...[132, 377, 621].flatMap((y, r) => [I(36, y, 364, 229, `photo:${1 + r * 2}`), I(416, y, 364, 229, `photo:${2 + r * 2}`)]),
@@ -283,7 +329,9 @@ export const PAGES = P;
 export type Template = { id: string; name: string; desc: string; size: string; pages: string[]; tags: string[] };
 export const TEMPLATES: Template[] = [
   { id: 'sig-flyer', name: 'Signature Flyer', desc: 'Hero · details · overview · photo page', size: 'letter', pages: ['sig-overview', 'sig-photos5'], tags: ['lease', 'sale', 'office', 'industrial'] },
+  { id: 'sig-flyer6', name: 'Signature Flyer · 6 photos', desc: 'Hero · details · overview · 3 × 2 photo page', size: 'letter', pages: ['sig-overview', 'sig-photos3x2'], tags: ['lease', 'sale', 'office', 'retail'] },
   { id: 'sig-brochure', name: 'Signature Brochure', desc: 'Overview · site plan · photos · maps', size: 'letter', pages: ['sig-overview', 'sig-plans', 'sig-photos6', 'sig-maps'], tags: ['lease', 'sale', 'office'] },
+  { id: 'bro-lease', name: 'Signature Lease Brochure', desc: 'Executive summary · photos · floor plans · map · ring demographics', size: 'letter', pages: ['bro-summary', 'bro-photos', 'bro-plans', 'bro-map', 'bro-demo'], tags: ['lease', 'sale', 'office', 'retail'] },
   { id: 'sig-retail', name: 'Signature Retail', desc: 'Overview · co-tenancy map · 1/3/5-mile demographics', size: 'letter', pages: ['sig-overview', 'sig-retail', 'sig-photos6'], tags: ['retail', 'lease', 'sale'] },
 
   { id: 'classic-lease', name: 'Classic Band Flyer', desc: 'Summary left · photos · aerial', size: 'letter', pages: ['classic-summary-left', 'classic-photos', 'classic-aerial'], tags: ['lease', 'sale'] },
