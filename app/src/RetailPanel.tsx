@@ -34,7 +34,7 @@ export function RetailMapCard({ p, b, upd }: Props) {
       upd(x => ({ ...x, trafficPts: r, traffic: r[0] ? fmtVpd(r[0].value) : x.traffic })); setLog([`${r.length} traffic counts (${r[0]?.source || ''} ${r[0]?.year || ''}). Road names from OpenStreetMap; edit if needed.`]); }
     catch (e) { setLog([(e as Error).message]); } setBusy(''); };
   const draw = async () => { setBusy('draw');
-    try { const [m, r] = await Promise.all([drawRetailMap(p, b, { mode: 'cotenancy', sat, z, siteLabel: label }), drawRetailMap(p, b, { mode: 'rings', sat: false, siteLabel: label, H: 925 })]);
+    try { const [m, r] = await Promise.all([drawRetailMap(p, b, { mode: 'cotenancy', sat, z, siteLabel: label }), drawRetailMap(p, b, { mode: 'rings', sat: false, siteLabel: label, H: 800 })]);
       upd(x => ({ ...x, retailMap: m, ringMap: r })); setLog(['Maps drawn. Templates using "Retail co-tenancy map" and "Ring map" update automatically.']); }
     catch (e) { setLog(['Map failed: ' + (e as Error).message]); } setBusy(''); };
   const addCustom = () => upd(x => ({ ...x, pois: [{ id: Math.random().toString(36).slice(2, 9), name: 'New tenant', kind: 'custom', lat: +x.lat + 0.002, lon: +x.lon + 0.002, on: true }, ...x.pois] }));

@@ -17,6 +17,7 @@ const P: Record<string, string> = {
   tree: '<path d="M24 42V26M24 6c-9 0-14 7-12 14-3 3-1 9 5 9h14c6 0 8-6 5-9 2-7-3-14-12-14z"/>',
   wifi: '<path d="M6 18a26 26 0 0136 0M12 25a17 17 0 0124 0M18 32a8 8 0 0112 0"/><circle cx="24" cy="38" r="2"/>',
   key: '<circle cx="15" cy="24" r="8"/><path d="M23 24h20M37 24v7M43 24v5"/>',
+  compass: '<circle cx="24" cy="24" r="19"/><path d="M24 9l5 15h-10z"/><path d="M19 24l5 15 5-15"/><path d="M21 4h6"/>',
   star: '<path d="M24 5l6 13 14 1-11 9 4 14-13-8-13 8 4-14L4 19l14-1z"/>',
 };
 export const ICONS = Object.keys(P);
