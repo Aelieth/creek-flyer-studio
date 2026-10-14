@@ -1,3 +1,5 @@
 Fonts in this folder are from Google Fonts and licensed under the SIL Open Font License 1.1 (https://openfontlicense.org):
 Open Sans, Nunito Sans, Barlow Condensed, Jost, Montserrat, Lora.
 Stored as base64 (*.ttf.b64); see scripts/encode-assets.sh.
+
+Lato (Lukasz Dziedzic) and Playfair Display (Claus Eggers Sørensen): SIL Open Font License 1.1, from github.com/google/fonts. Subset to Latin.

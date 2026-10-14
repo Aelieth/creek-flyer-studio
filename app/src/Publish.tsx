@@ -17,7 +17,7 @@ export function Publish({ p, b, docs }: { p: Property; b: Brand; docs: Doc[] }) 
     download(await (await fetch(banner)).blob(), safeName(p.name) + '-email-banner.jpg'); } finally { setBusy(''); } };
   return <div className="page-form">
     <section className="card"><h2>Listing microsite <small>one self-contained HTML file</small></h2>
-      <p>Hero, facts, description, highlights, suites, photo gallery, map, broker contacts and a flyer download button. Upload the file to S3/creekpe.com or attach it to an email; it works offline.</p>
+      <p>Hero, facts, description, highlights, suites, photo gallery, map, broker contacts and a flyer download button. Upload the file to your website or S3, or attach it to an email; it works offline.</p>
       <div className="row"><span>Attach flyer:</span><select value={flyer} onChange={e => setFlyer(e.target.value)}><option value="">(none)</option>{mine.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}</select>
         <button className="primary" disabled={!!busy} onClick={site}>Download microsite</button></div></section>
     <section className="card"><h2>Email blast <small>Outlook-safe HTML</small></h2>

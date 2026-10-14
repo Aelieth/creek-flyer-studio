@@ -6,6 +6,8 @@ export const FONTS: Record<string, { weights: number[]; asc: number; desc: numbe
   'Jost': { weights: [400, 500, 600], asc: 1.07, desc: 0.375 },
   'Montserrat': { weights: [400, 600, 800], asc: 0.968, desc: 0.251 },
   'Lora': { weights: [400, 700], asc: 1.006, desc: 0.274 },
+  'Lato': { weights: [300, 400, 700], asc: 0.987, desc: 0.213 },
+  'Playfair Display': { weights: [400, 700], asc: 1.082, desc: 0.251 },
 };
 export const FONT_NAMES = Object.keys(FONTS);
 export function pickWeight(fam: string, w = 400) {

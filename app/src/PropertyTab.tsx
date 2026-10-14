@@ -44,10 +44,10 @@ export function PropertyTab({ props, active: p, b, setActive, upd, add, remove, 
         {found && <table className="found"><tbody>{Object.entries(found).map(([k, v]) => <tr key={k}><td>{FIELD_LABELS[k] || k}</td><td>{typeof v === 'string' ? v : Array.isArray(v) ? v.map((x: any) => x.name || JSON.stringify(x)).join(', ') : JSON.stringify(v)}</td></tr>)}</tbody></table>}</section>
     </div>
     <section className="card"><h2>Listing</h2><div className="grid">
-      <Field label="Property name" v={p.name} on={f('name')} wide={2} />
+      <Field label="Property name / title" v={p.name} on={f('name')} wide={2} />
       <label className="field"><span>Type</span><select value={p.propType} onChange={e => f('propType')(e.target.value)}>{TYPES.map(o => <option key={o}>{o}</option>)}</select></label>
       <label className="field"><span>Listing</span><select value={p.listing} onChange={e => f('listing')(e.target.value)}><option>Lease</option><option>Sale</option><option>Sale or Lease</option></select></label>
-      <Field label="Street address" v={p.address} on={f('address')} wide={2} /><Field label="City" v={p.city} on={f('city')} /><div className="grid2"><Field label="State" v={p.state} on={f('state')} /><Field label="ZIP" v={p.zip} on={f('zip')} /></div>
+      <Field label="Street address" v={p.address} on={f('address')} wide={2} /><Field label="Subtitle line (optional, defaults to full address)" v={p.subtitle || ''} on={f('subtitle')} wide={4} /><Field label="City" v={p.city} on={f('city')} /><div className="grid2"><Field label="State" v={p.state} on={f('state')} /><Field label="ZIP" v={p.zip} on={f('zip')} /></div>
       <Field label="Sale price" v={p.price} on={f('price')} /><Field label="Lease rate" v={p.leaseRate} on={f('leaseRate')} /><Field label="Lease type" v={p.leaseType} on={f('leaseType')} ph="NNN, Full Service…" /><Field label="Available SF" v={p.availableSf} on={f('availableSf')} />
       <Field label="Building SF" v={p.buildingSf} on={f('buildingSf')} /><Field label="Office SF" v={p.officeSf} on={f('officeSf')} /><Field label="Lot size" v={p.lotAcres} on={f('lotAcres')} /><Field label="Year built" v={p.yearBuilt} on={f('yearBuilt')} />
       <Field label="Zoning" v={p.zoning} on={f('zoning')} /><Field label="Parking" v={p.parking} on={f('parking')} /><Field label="Clear height" v={p.clearHeight} on={f('clearHeight')} /><Field label="Building class" v={p.buildingClass} on={f('buildingClass')} />
