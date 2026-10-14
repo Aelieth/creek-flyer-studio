@@ -106,6 +106,7 @@ export function layoutText(el: TextEl, text: string, b: Brand): TextLayout {
 export type ImgReq = { key: string; src: string; w: number; h: number; fit: 'cover' | 'contain'; fx: number; fy: number; zoom: number; radius: number; gray: boolean; tint?: string; tintAlpha: number };
 export function imageSrc(src: string, p: Property, b: Brand): string {
   if (src === 'logo') return b.logo; if (src === 'logoLight') return b.logoLight || b.logo; if (src === 'map') return p.mapImg;
+  if (src === 'retailMap') return p.retailMap || p.aerial || p.photos[0] || ''; if (src === 'ringMap') return p.ringMap || p.mapImg;
   if (src === 'sitePlan') return p.sitePlan || p.mapImg; if (src === 'aerial') return p.aerial || p.photos[0] || '';
   if (src.startsWith('icon:')) { const [, n, col] = src.split(':'); return iconUrl(n, col ? color(col, b) : '#ffffff'); }
   if (src.startsWith('photo:')) { const n = +src.slice(6); return p.photos[n] || ''; }

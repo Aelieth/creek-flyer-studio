@@ -5,9 +5,10 @@ import { fileToDataUrl, newProperty } from './store';
 const FIELD_LABELS: Record<string, string> = { name: 'Property name', address: 'Street address', city: 'City', state: 'State', zip: 'ZIP', price: 'Sale price', leaseRate: 'Lease rate', leaseType: 'Lease type', availableSf: 'Available SF', buildingSf: 'Building SF', officeSf: 'Office SF', lotAcres: 'Lot size', yearBuilt: 'Year built', zoning: 'Zoning', parking: 'Parking', clearHeight: 'Clear height', buildingClass: 'Building class', market: 'Market', traffic: 'Traffic count', capRate: 'Cap rate', noi: 'NOI', description: 'Description', locationDescription: 'Location description', highlights: 'Highlights', propType: 'Property type', listing: 'Listing', brokers: 'Brokers' };
 import { lookupAddress, staticMap } from './lookup';
 import { extractFields } from './extract';
-type Props = { props: Property[]; active: Property; b: Brand; setActive: (id: string) => void; upd: (f: (p: Property) => Property) => void; add: (p: Property) => void; remove: (id: string) => void; next: () => void };
+import { DemographicsCard, RetailMapCard } from './RetailPanel';
+type Props = { props: Property[]; active: Property; b: Brand; setActive: (id: string) => void; upd: (f: (p: Property) => Property) => void; add: (p: Property) => void; remove: (id: string) => void; next: () => void; goBrand?: () => void };
 const TYPES = ['Office', 'Retail', 'Industrial', 'Flex', 'Medical Office', 'Land', 'Multifamily', 'Mixed Use', 'Hospitality', 'Special Purpose'];
-export function PropertyTab({ props, active: p, b, setActive, upd, add, remove, next }: Props) {
+export function PropertyTab({ props, active: p, b, setActive, upd, add, remove, next, goBrand }: Props) {
   const [q, setQ] = useState(''); const [busy, setBusy] = useState(false); const [log, setLog] = useState<string[]>([]);
   const [paste, setPaste] = useState(''); const [found, setFound] = useState<Partial<Property> | null>(null);
   const [mapZ, setMapZ] = useState(16); const [mapGray, setMapGray] = useState(false);
@@ -26,7 +27,7 @@ export function PropertyTab({ props, active: p, b, setActive, upd, add, remove, 
     <section className="card proplist"><div className="row wrap">
       <b>Property record:</b>
       <select value={p.id} onChange={e => setActive(e.target.value)}>{props.map(x => <option key={x.id} value={x.id}>{x.name || 'Untitled'} — {x.city}</option>)}</select>
-      <button onClick={() => add(newProperty({ name: 'New Property', address: '', city: '', zip: '', description: '', highlights: '', locationDescription: '', photos: [], suites: [], comps: [], dem: {} }))}>+ New</button>
+      <button onClick={() => add(newProperty({ name: 'New Property', address: '', city: '', zip: '', description: '', highlights: '', locationDescription: '', photos: [], suites: [], comps: [], dem: {}, pois: [], trafficPts: [], lat: '', lon: '' }))}>+ New</button>
       <button onClick={() => add({ ...p, id: Math.random().toString(36).slice(2, 10), name: p.name + ' (copy)' })}>Duplicate</button>
       {props.length > 1 && <button className="danger" onClick={() => confirm('Delete this property record?') && remove(p.id)}>Delete</button>}
       <span className="muted">One record feeds every flyer, brochure, microsite and email built from it.</span></div></section>
@@ -72,9 +73,9 @@ export function PropertyTab({ props, active: p, b, setActive, upd, add, remove, 
       <Field label="Latitude" v={p.lat} on={f('lat')} /><Field label="Longitude" v={p.lon} on={f('lon')} /><Field label="County" v={p.county} on={f('county')} /><Field label="Flood zone" v={p.floodZone} on={f('floodZone')} />
       <Field label="Tract" v={p.tract} on={f('tract')} /><Field label="Tract population" v={p.population} on={f('population')} /><Field label="Tract median HH income" v={p.medianIncome} on={f('medianIncome')} /><Field label="Tract median age" v={p.medianAge} on={f('medianAge')} />
     </div>
-      <table className="dem"><thead><tr><th></th><th>1 mile</th><th>3 miles</th><th>5 miles</th></tr></thead><tbody>
-        {[['pop', 'Population'], ['hh', 'Households'], ['inc', 'Avg HH income']].map(([k, l]) => <tr key={k}><td>{l}</td>{[1, 3, 5].map(r => <td key={r}><input value={p.dem[k + r] || ''} onChange={e => upd(x => ({ ...x, dem: { ...x.dem, [k + r]: e.target.value } }))} /></td>)}</tr>)}
-      </tbody></table><p className="muted">Radius demographics: paste from your demographics provider (see docs/data-connectors.md, "Review later").</p></section>
+    </section>
+    <DemographicsCard p={p} b={b} upd={upd} goBrand={goBrand} />
+    <RetailMapCard p={p} b={b} upd={upd} />
     <ArrayEditor title="Suites / availability" rows={p.suites} cols={['suite', 'sf', 'rate', 'status', 'notes']} onChange={suites => upd(x => ({ ...x, suites: suites as any }))} />
     <ArrayEditor title="Sale comparables" rows={p.comps} cols={['name', 'address', 'date', 'price', 'sf', 'ppsf', 'cap', 'notes']} onChange={comps => upd(x => ({ ...x, comps: comps as any }))} />
     <div className="row end"><button className="primary" onClick={next}>Next: pick a template →</button></div>

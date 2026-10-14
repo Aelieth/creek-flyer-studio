@@ -40,11 +40,11 @@ export default function App() {
       <button className="helpbtn" title="Help & keyboard shortcuts (?)" onClick={() => setHelp(true)}>?</button>
     </header>
     {welcome && <Welcome onClose={closeWelcome} onTour={() => { closeWelcome(); goStep(0); }}
-      onBlank={() => { closeWelcome(); const p = newProperty({ name: 'New Property', address: '', city: '', zip: '', description: '', highlights: '', locationDescription: '', photos: [], suites: [], comps: [], dem: {} }); setS({ ...s, properties: [...s.properties, p], activePropertyId: p.id }); setTab('property'); }} />}
+      onBlank={() => { closeWelcome(); const p = newProperty({ name: 'New Property', address: '', city: '', zip: '', description: '', highlights: '', locationDescription: '', photos: [], suites: [], comps: [], dem: {}, pois: [], trafficPts: [], lat: '', lon: '' }); setS({ ...s, properties: [...s.properties, p], activePropertyId: p.id }); setTab('property'); }} />}
     {tour !== null && <TourCard i={tour} onNext={() => goStep(tour + 1)} onPrev={() => goStep(tour - 1)} onEnd={() => setTour(null)} />}
     {help && <Shortcuts onClose={() => setHelp(false)} onTour={() => { setHelp(false); goStep(0); }} />}
     {tab === 'property' && <PropertyTab props={s.properties} active={active} b={s.brand} upd={updP} setActive={id => setS({ ...s, activePropertyId: id })}
-      add={p => setS({ ...s, properties: [...s.properties, p], activePropertyId: p.id })} remove={id => setS({ ...s, properties: s.properties.filter(p => p.id !== id), activePropertyId: s.properties.find(p => p.id !== id)!.id })} next={() => setTab('templates')} />}
+      add={p => setS({ ...s, properties: [...s.properties, p], activePropertyId: p.id })} remove={id => setS({ ...s, properties: s.properties.filter(p => p.id !== id), activePropertyId: s.properties.find(p => p.id !== id)!.id })} next={() => setTab('templates')} goBrand={() => setTab('brand')} />}
     {tab === 'brand' && <BrandTab b={s.brand} setB={setB} state={s} load={n => { setS(n); setDocId(n.docs[0]?.id ?? null); }} />}
     {tab === 'templates' && <Gallery p={active} b={s.brand} create={(t, sizeId) => { const size = sizeId ? SIZES.find(z => z.id === sizeId)! : sizeOf(t.size);
       const d: Doc = { id: uid(), name: `${active.name} – ${t.name}`, templateId: t.id, propertyId: active.id, size, pages: makeDocPages(t, size), updated: Date.now() };

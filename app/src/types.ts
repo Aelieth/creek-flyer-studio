@@ -1,5 +1,7 @@
 export type Suite = { suite: string; sf: string; rate: string; status: string; notes: string };
 export type Comp = { name: string; address: string; date: string; price: string; sf: string; ppsf: string; cap: string; notes: string };
+export type Poi = { id: string; name: string; kind: 'draw' | 'anchor' | 'retail' | 'custom'; lat: number; lon: number; on: boolean; dist?: number; logo?: string };
+export type TrafficPt = { id: string; label: string; value: number; year?: string; source?: string; lat: number; lon: number; on: boolean };
 export type Property = {
   id: string;
   name: string; address: string; city: string; state: string; zip: string;
@@ -9,7 +11,8 @@ export type Property = {
   description: string; locationDescription: string; highlights: string;
   brokers: { name: string; title: string; email: string; phone: string; mobile: string }[];
   lat: string; lon: string; county: string; tract: string; floodZone: string; population: string; medianIncome: string; medianAge: string;
-  dem: Record<string, string>; // pop1 pop3 pop5 hh1 hh3 hh5 inc1 inc3 inc5
+  dem: Record<string, string>; // pop/hh/inc(avg)/med/growth/day + 1|3|5
+  pois: Poi[]; trafficPts: TrafficPt[]; retailMap: string; ringMap: string;
   suites: Suite[]; comps: Comp[];
   photos: string[]; mapImg: string; sitePlan: string; aerial: string;
 };
