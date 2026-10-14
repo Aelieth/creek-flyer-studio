@@ -227,7 +227,7 @@ function Inspector({ el, b, p, upd, del, dup, order, alignTo, imgUpload, edit }:
       <div className="row"><Num label="Border px" v={el.sw ?? 0} on={sw => u({ sw })} /><Num label="Radius" v={el.radius ?? 0} on={radius => u({ radius })} /></div></>}
     {el.type === 'image' && <>
       <label className="field"><span>Source</span><select value={el.src.startsWith('data:') ? 'custom' : el.src} onChange={e => e.target.value !== 'custom' && u({ src: e.target.value })}>
-        <option value="logo">Brand logo</option><option value="logoLight">Brand logo (on dark)</option><option value="map">Location map</option><option value="aerial">Aerial</option><option value="sitePlan">Site plan</option>
+        <option value="logo">Brand logo</option><option value="logoLight">Brand logo (on dark)</option><option value="map">Location map</option><option value="aerial">Aerial</option><option value="sitePlan">Site plan</option><option value="retailMap">Retail co-tenancy map</option><option value="ringMap">Ring map (1/3/5 mi)</option>
         {Array.from({ length: Math.max(8, p.photos.length) }, (_, i) => <option key={i} value={'photo:' + i}>Property photo #{i + 1}{p.photos[i] ? '' : ' (empty)'}</option>)}
         {ICONS.map(i => <option key={i} value={'icon:' + i}>Icon: {i}</option>)}<option value="custom">Uploaded image</option></select></label>
       <label className="btn sm">Replace with upload…<input type="file" accept="image/*" hidden onChange={e => { imgUpload(e.target.files); e.target.value = ''; }} /></label>

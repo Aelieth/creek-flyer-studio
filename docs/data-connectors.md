@@ -37,6 +37,12 @@ Legend: **LIVE** = wired into the app now. Cost "?" = not verified; check vendor
 | USGS / NLCD, NWI wetlands | Land/environment | ArcGIS REST |
 | Microsoft Building Footprints | Building outlines | bulk GeoJSON (ODbL) |
 
+## B2. Retail tools (live in the app)
+- **Nearby retailers & draws:** OpenStreetMap Overpass (`maps.mail.ru` mirror first, then `overpass-api.de`, `overpass.private.coffee`). Anchors, malls, hospitals, colleges, cinemas and every branded shop/restaurant within 1.25 mi; ranked by type, brand and distance; top 12 switched on. Each pin can be renamed, toggled, re-typed or given an uploaded logo. Custom pins take lat/lon. Data © OpenStreetMap contributors (ODbL).
+- **Traffic counts:** ODOT `AADT_Network` FeatureServer (services6.arcgis.com/RBtoEUQ2lmN0K3GY, CORS, no key) for Oklahoma; TxDOT `TxDOT_AADT_Annuals_(Public_View)` (services.arcgis.com/KTcxiTD9dsQw4r7Z) for Texas. Nearest distinct counts within 1 mi; road names are typed by the user (state route IDs aren't friendly names).
+- **Ring demographics:** TIGERweb `tigerWMS_ACS2023` layer 10 (block groups, point+distance query) → ACS 2023 5-yr `B01003_001E, B11001_001E, B19013_001E, B19025_001E` per county → sum block groups whose internal point lies inside each ring. Avg HH income = aggregate income / households; median = household-weighted median of block-group medians (estimate). Growth = vs ACS 2019 on the 2010-geography block groups (`tigerWMS_ACS2019`). Needs the free Census key.
+- **Map compositor:** canvas, OSM or Esri World Imagery tiles at fractional zoom, subject star + label, callout pins with collision avoidance, traffic badges, 1/3/5-mile rings. Saved as image sources `retailMap` and `ringMap`.
+
 ## C. Review later — paid / better coverage
 | Vendor | What it adds | Access | Cost |
 |---|---|---|---|
@@ -49,7 +55,10 @@ Legend: **LIVE** = wired into the app now. Cost "?" = not verified; check vendor
 | Mapbox | Styled branded maps, static images, geocoding | REST, token | ? (free tier; verify) |
 | Walk Score | Walk/transit/bike score | REST, key | ? (free tier for low volume; verify) |
 | RentCast | Rent & sale estimates, listings (resi/multifamily) | REST, key | ? (free dev tier; verify) |
-| Placer.ai | Foot traffic | enterprise | ? |
+| Placer.ai | Foot traffic / visits for co-tenants, true trade areas, daytime population | enterprise | ? |
+| Esri World Imagery (licensed use) | The satellite basemap in the retail map is Esri World Imagery tiles with attribution; confirm terms (or use an ArcGIS Location Platform key / another licensed imagery source) before wide distribution | tiles | ? |
+| Daytime population / workplace data | Not in free ACS at ring level; Esri, Placer.ai, or LEHD LODES (free, but block-level processing) | varies | ? |
+| Logo service | Auto-fetch co-tenant logos instead of manual upload (trademark use is the broker's call) | REST | ? |
 | Kalibrate / StreetLight | Traffic counts beyond DOT | enterprise | ? |
 | Cotality (CoreLogic), Black Knight/ICE | Deed/mortgage/tax at scale | enterprise | ? |
 | Precisely, HERE | Geocoding/parcels/POIs | API | ? |

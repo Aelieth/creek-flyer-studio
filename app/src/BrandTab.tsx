@@ -18,6 +18,7 @@ export function BrandTab({ b, setB, state, load }: { b: Brand; setB: (f: (x: Bra
       <div className="row wrap">{logo('logo', 'Logo (on white)', '#ffffff')}{logo('logoLight', 'Logo (on dark)', b.secondary)}</div>
       <p className="muted">Logos are stored only in this browser. PNG/SVG with transparency works best.</p></section>
     <section className="card"><h2>Data settings</h2><div className="grid"><Field label="Census API key (free, enables ACS demographics)" v={b.censusKey} on={f('censusKey')} wide={3} /></div>
+      <p className="muted">Powers 1/3/5-mile ring demographics and tract data. Get a free key in about a minute at <a href="https://api.census.gov/data/key_signup.html" target="_blank" rel="noreferrer">api.census.gov/data/key_signup.html</a>, click the activation link in the email, then paste it here. Stored only in this browser.</p>
       <p className="muted">Free key: <a href="https://api.census.gov/data/key_signup.html" target="_blank">api.census.gov/data/key_signup.html</a></p></section>
     <section className="card"><h2>Project file</h2><p className="muted">Everything (properties, brand, documents, photos) as one JSON file — back up, move between computers, or share with a coworker.</p>
       <div className="row"><button onClick={() => download(JSON.stringify(state), `creek-flyer-project-${new Date().toISOString().slice(0, 10)}.json`, 'application/json')}>Export project JSON</button>
