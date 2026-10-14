@@ -11,6 +11,7 @@ An in-house builder for commercial real-estate marketing: flyers, brochures, off
 - **14 templates / 18 library pages:** sale, lease, multi-tenant availability, land, retail aerial, OM (cover, investment summary, comps, demographics), 11×17 brochure, social, email banner
 - **Sizes:** Letter portrait/landscape, Tabloid, A4, Social 1080, Email 1200×600. Any page refits to any size
 - **Editor:** drag, 8-way resize, rotate, smart guides, inline text editing, auto-fit text, image crop/zoom/tint, layers, undo/redo, page reorder
+- **Onboarding:** welcome screen, 5-step guided tour, `?` opens keyboard-shortcut help
 - **Export:** vector PDF with selectable text (~0.2–1.2 MB), PNG/JPEG, microsite HTML, email HTML, project JSON
 
 ## Quick start

@@ -29,6 +29,10 @@ A line whose tokens are all empty is removed, so optional facts disappear cleanl
 
 Tables: a row `@suites` expands to one row per available suite; `source: 'comps'` or `'suites'` binds the whole table to the record's arrays.
 
+## Layout helpers
+- `flow: 'brokers', flowIdx: n, flowGap: 20` on elements makes columns sit side by side; each column starts `flowGap` px after the widest visible line of the previous one (used for broker contacts; hidden columns collapse).
+- Tables: `rowGap` adds a spacer (with rule) after each non-suite row. If a table is taller than its box it automatically drops the gaps, then tightens row height, so it never runs into the footer.
+
 ## Text that always fits
 Set `autoFit: true` on a text element and it shrinks until it fits its box (down to `minSize`). The editor outlines any remaining overflow in red, and export warns about it.
 

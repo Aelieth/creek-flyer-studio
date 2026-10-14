@@ -178,7 +178,15 @@ const phLabel = (s: string) => s === 'logo' || s === 'logoLight' ? 'Logo · Bran
 function tableRows(el: TableEl, c: Record<string, string>): string[][] {
   return el.rows.split('\n').filter(r => r.trim()).flatMap(r => r.trim() === '@suites' ? (JSON.parse(c.__suitesAvail || '[]') as string[]).map(x => '\u0001' + x) : [r]).map(r => splitCells(r).map(x => resolve(x.trim().replace(/\\n/g, '\n'), c).replace(/\\n/g, '\n')));
 }
+// Tables always fit their box: if the content is taller than el.h, drop the spacer gaps, then tighten rows.
 function compileTable(el: TableEl, c: Record<string, string>, b: Brand, prims: Prim[], xf: Xf) {
+  const tries: [number, number][] = [[el.rowGap ?? 0, el.rowH], [0, el.rowH], [0, Math.max(el.size * 1.6, el.rowH * 0.85)], [0, el.size * 1.45]];
+  for (let i = 0; i < tries.length; i++) {
+    const local: Prim[] = []; const hgt = drawTable({ ...el, rowGap: tries[i][0], rowH: tries[i][1] }, c, b, local, xf);
+    if (hgt <= el.h + 1 || i === tries.length - 1) { prims.push(...local); return; }
+  }
+}
+function drawTable(el: TableEl, c: Record<string, string>, b: Brand, prims: Prim[], xf: Xf): number {
   let rows: string[][];
   rows = tableRows(el, c);
   if (el.source === 'suites' || el.source === 'comps') rows = [rows[0] || [], ...(JSON.parse(c['__' + el.source] || '[]') as string[][])];
@@ -207,6 +215,7 @@ function compileTable(el: TableEl, c: Record<string, string>, b: Brand, prims: P
     if (el.rule) prims.push({ k: 'rect', x: el.x, y: y - (el.ruleW ?? 1), w: el.w, h: el.ruleW ?? 1, fill: color(el.rule, b), xf });
     if (el.rowGap && !compact && !isHead) { y += el.rowGap; if (el.rule) prims.push({ k: 'rect', x: el.x, y: y - (el.ruleW ?? 1), w: el.w, h: el.ruleW ?? 1, fill: color(el.rule, b), xf }); }
   });
+  return y - el.y;
 }
 export function arraysToContext(p: Property, c: Record<string, string>) {
   c.__suites = JSON.stringify(p.suites.map(s => [s.suite, s.sf, s.rate || '—', s.status, s.notes]));

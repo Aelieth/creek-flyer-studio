@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Brand, Property } from './types';
 import { Field } from './ui';
 import { fileToDataUrl, newProperty } from './store';
+const FIELD_LABELS: Record<string, string> = { name: 'Property name', address: 'Street address', city: 'City', state: 'State', zip: 'ZIP', price: 'Sale price', leaseRate: 'Lease rate', leaseType: 'Lease type', availableSf: 'Available SF', buildingSf: 'Building SF', officeSf: 'Office SF', lotAcres: 'Lot size', yearBuilt: 'Year built', zoning: 'Zoning', parking: 'Parking', clearHeight: 'Clear height', buildingClass: 'Building class', market: 'Market', traffic: 'Traffic count', capRate: 'Cap rate', noi: 'NOI', description: 'Description', locationDescription: 'Location description', highlights: 'Highlights', propType: 'Property type', listing: 'Listing', brokers: 'Brokers' };
 import { lookupAddress, staticMap } from './lookup';
 import { extractFields } from './extract';
 type Props = { props: Property[]; active: Property; b: Brand; setActive: (id: string) => void; upd: (f: (p: Property) => Property) => void; add: (p: Property) => void; remove: (id: string) => void; next: () => void };
@@ -39,7 +40,7 @@ export function PropertyTab({ props, active: p, b, setActive, upd, add, remove, 
         <textarea rows={4} value={paste} onChange={e => setPaste(e.target.value)} placeholder="Paste an email, LOI, old flyer text or listing page. Price, SF, acres, zoning, address, highlights, brokers… are detected." />
         <div className="row"><button disabled={!paste.trim()} onClick={() => setFound(extractFields(paste))}>Extract</button>
           {found && <><span className="muted">{Object.keys(found).length} fields found</span><button className="primary" onClick={() => { upd(x => ({ ...x, ...found })); setFound(null); setPaste(''); }}>Apply</button><button onClick={() => setFound(null)}>Discard</button></>}</div>
-        {found && <table className="found"><tbody>{Object.entries(found).map(([k, v]) => <tr key={k}><td>{k}</td><td>{typeof v === 'string' ? v : JSON.stringify(v)}</td></tr>)}</tbody></table>}</section>
+        {found && <table className="found"><tbody>{Object.entries(found).map(([k, v]) => <tr key={k}><td>{FIELD_LABELS[k] || k}</td><td>{typeof v === 'string' ? v : Array.isArray(v) ? v.map((x: any) => x.name || JSON.stringify(x)).join(', ') : JSON.stringify(v)}</td></tr>)}</tbody></table>}</section>
     </div>
     <section className="card"><h2>Listing</h2><div className="grid">
       <Field label="Property name" v={p.name} on={f('name')} wide={2} />
