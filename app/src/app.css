@@ -66,3 +66,4 @@ kbd{background:#f3f5f8;border:1px solid #d5dbe2;border-bottom-width:2px;border-r
 .retail .logo-th{height:22px;max-width:60px;object-fit:contain;vertical-align:middle;margin-right:4px}
 .mapprev img{width:100%;border:1px solid #d0d7de;border-radius:6px;margin-bottom:8px}
 .mapprev .empty-slot{height:240px;display:flex;align-items:center;justify-content:center}
+.tcard{position:relative}.badge-new{position:absolute;top:10px;left:10px;background:#003057;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;letter-spacing:.3px;z-index:5}
