@@ -1,0 +1,4 @@
+node_modules
+dist
+public/fonts/*.ttf
+public/demo/*.jpg
