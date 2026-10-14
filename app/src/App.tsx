@@ -18,6 +18,7 @@ import { TEMPLATES } from './templates';
 import { useCallback } from 'react';
 import './app.css';
 import { buildPdf } from './pdf';
+import { ringDemographics, drawRetailMap } from './retail';
 type Tab = 'property' | 'brand' | 'templates' | 'design' | 'publish';
 const TABS: [Tab, string][] = [['property', 'Listing'], ['brand', 'Brand'], ['templates', 'Templates'], ['design', 'Design'], ['publish', 'Publish']];
 export default function App() {
@@ -35,7 +36,7 @@ export default function App() {
     if (st.tab === 'design' && s && !s.docs.length) { const active = s.properties.find(p => p.id === s.activePropertyId) || s.properties[0]; const t = TEMPLATES[0]; const size = sizeOf(t.size);
       const d: Doc = { id: uid(), name: `${active.name} – ${t.name}`, templateId: t.id, propertyId: active.id, size, pages: makeDocPages(t, size), updated: Date.now() }; setS({ ...s, docs: [d] }); setDocId(d.id); }
     else if (st.tab === 'design' && s && !docId) setDocId(s.docs[0].id); };
-  (window as any).__cfsQA = { TEMPLATES, makeDocPages, sizeOf, buildPdf };
+  (window as any).__cfsQA = { TEMPLATES, makeDocPages, sizeOf, buildPdf, ringDemographics, drawRetailMap };
   if (!s) return <div className="loading"><img src={`${import.meta.env.BASE_URL}brand/creekpe-logo.svg`} alt="Creek Price Edwards" /><span className="spinner" />Loading Creek Flyer Hub…</div>;
   const active = s.properties.find(p => p.id === s.activePropertyId) || s.properties[0];
   const updP = (f: (p: Property) => Property) => setS(x => x && ({ ...x, properties: x.properties.map(p => p.id === active.id ? f(p) : p) }));

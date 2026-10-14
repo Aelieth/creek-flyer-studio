@@ -77,8 +77,10 @@ function pickTraffic(pts: (TrafficPt & { d: number })[], src: string): TrafficPt
 export const fmtVpd = (v: number) => v.toLocaleString() + ' VPD';
 // ---------- ring demographics ----------
 export type RingResult = { dem: Record<string, string>; log: string[] };
-async function bgsWithin(lat: number, lon: number, vintage: 'ACS2023' | 'ACS2019', r: number) {
-  const u = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_${vintage}/MapServer/10/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&inSR=4326&distance=${r}&units=esriSRUnit_StatuteMile&outFields=GEOID,STATE,COUNTY,CENTLAT,CENTLON&returnGeometry=false&f=json`;
+// ACS 2019 tables use 2010 block groups; TIGERweb's ACS2019 service already serves 2020 block groups (GEOIDs don't match),
+// so the 2019 comparison uses the Census 2010 block-group layer.
+async function bgsWithin(lat: number, lon: number, vintage: 'ACS2023' | 'Census2010', r: number) {
+  const u = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_${vintage}/MapServer/${vintage === 'Census2010' ? 16 : 10}/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&inSR=4326&distance=${r}&units=esriSRUnit_StatuteMile&outFields=GEOID,STATE,COUNTY,CENTLAT,CENTLON&returnGeometry=false&f=json`;
   const j = await getJson(u, undefined, 45000);
   return (j.features || []).map((f: any) => ({ geoid: f.attributes.GEOID as string, st: f.attributes.STATE as string, co: f.attributes.COUNTY as string, d: distMi(lat, lon, +f.attributes.CENTLAT, +f.attributes.CENTLON) }));
 }
@@ -86,7 +88,11 @@ async function acsByCounty(year: number, vars: string[], counties: string[], key
   const out = new Map<string, number[]>();
   await Promise.all(counties.map(async sc => {
     const [st, co] = sc.split(':');
-    const j = await getJson(`https://api.census.gov/data/${year}/acs/acs5?get=${vars.join(',')}&for=block%20group:*&in=state:${st}%20county:${co}&key=${encodeURIComponent(key)}`, undefined, 45000);
+    const u = `https://api.census.gov/data/${year}/acs/acs5?get=${vars.join(',')}&for=block%20group:*&in=state:${st}%20county:${co}&key=${encodeURIComponent(key.trim())}`;
+    // A bad key makes Census redirect to an HTML page without CORS headers, which surfaces as a vague "Failed to fetch".
+    const probe = await fetch(u, { redirect: 'manual' }).catch(() => null);
+    if (probe && (probe.type === 'opaqueredirect' || (probe.status >= 300 && probe.status < 400))) throw new Error('The Census API rejected the key (invalid, or not activated yet: click the activation link in the email from Census, then try again).');
+    const j = probe && probe.ok ? await probe.json() : await getJson(u, undefined, 45000);
     const h: string[] = j[0];
     for (const row of j.slice(1)) out.set(row[h.indexOf('state')] + row[h.indexOf('county')] + row[h.indexOf('tract')] + row[h.indexOf('block group')], vars.map((_, i) => +row[i]));
   }));
@@ -105,7 +111,7 @@ export async function ringDemographics(lat: number, lon: number, key: string, ri
   const dem: Record<string, string> = {};
   let old: { d: number; pop: number }[] = [];
   try {
-    const b19 = (await bgsWithin(lat, lon, 'ACS2019', R)).filter((b: any) => b.d <= R);
+    const b19 = (await bgsWithin(lat, lon, 'Census2010', R)).filter((b: any) => b.d <= R);
     const c19 = [...new Set(b19.map((b: any) => b.st + ':' + b.co))] as string[];
     const d19 = await acsByCounty(2019, ['B01003_001E'], c19, key);
     old = b19.map((b: any) => ({ d: b.d, pop: d19.get(b.geoid)?.[0] || 0 }));
