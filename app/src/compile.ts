@@ -12,6 +12,7 @@ export type Prim =
   | { k: 'ph'; x: number; y: number; w: number; h: number; label: string; xf: Xf };
 
 // ---------- data binding ----------
+export const DEM_KEYS = ['pop', 'hh', 'inc', 'med', 'growth', 'day', 'age', 'ageM', 'ageF', 'pph', 'hval'];
 export function context(p: Property, b: Brand): Record<string, string> {
   const c: Record<string, string> = {};
   for (const [k, v] of Object.entries(p)) if (typeof v === 'string') c[k] = v;
@@ -26,6 +27,14 @@ export function context(p: Property, b: Brand): Record<string, string> {
   c.priceOrRate = p.listing === 'Lease' ? p.leaseRate : p.price;
   c.salePrice = p.listing === 'Lease' ? '' : p.price; c.leaseRateIf = p.listing === 'Sale' ? '' : p.leaseRate; c.leaseTypeIf = p.listing === 'Sale' ? '' : p.leaseType;
   c.availableSuites = p.suites.filter(s => !/leased/i.test(s.status)).length + '';
+  const rings = p.rings && p.rings.length === 3 ? p.rings : [1, 3, 5];
+  rings.forEach((r, i) => { c['ring' + (i + 1)] = `${r} Mile${r === 1 ? '' : 's'}`;
+    for (const k of DEM_KEYS) c[`rd_${k}${i + 1}`] = (p.dem || {})[k + r] || ''; });
+  c.ringList = rings.join(', ') + ' miles';
+  (p.customFields || []).forEach(f => { if (f.label) c['cf_' + f.label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')] = f.value; });
+  c.customRows = (p.customFields || []).filter(f => f.label && f.value).map(f => `${f.label}:|${f.value}`).join('\n');
+  c.unitCount = p.suites.length ? p.suites.length + '' : '';
+  c.status = p.status || 'Active';
   arraysToContext(p, c);
   return c;
 }
@@ -226,7 +235,7 @@ export function compilePage(els0: El[], p: Property, b: Brand, editing: boolean)
 const phLabel = (s: string) => s === 'logo' || s === 'logoLight' ? 'Logo · Brand tab' : s === 'map' ? 'Map · run address lookup' : s === 'sitePlan' ? 'Site plan · Property tab' : s.startsWith('photo:') ? `Photo ${+s.slice(6) + 1} · Property tab` : 'Image';
 function tableRows(el: TableEl, c: Record<string, string>): string[][] {
   const src = el.override === 'details' && (c.details || '').trim() ? c.details : el.rows;
-  return src.split('\n').filter(r => r.trim()).flatMap(r => r.trim() === '@suites' ? (JSON.parse(c.__suitesAvail || '[]') as string[]).map(x => '\u0001' + x) : [r]).map(r => splitCells(r).map(x => resolve(x.trim().replace(/\\n/g, '\n'), c).replace(/\\n/g, '\n')));
+  return src.split('\n').filter(r => r.trim()).flatMap(r => r.trim() === '@units' || r.trim() === '@unitsAll' ? (JSON.parse(c[r.trim() === '@units' ? '__u_avail' : '__u_all'] || '[]') as string[]) : r.trim() === '@custom' ? (c.customRows || '').split('\n').filter(Boolean) : r.trim() === '@suites' ? (JSON.parse(c.__suitesAvail || '[]') as string[]).map(x => '\u0001' + x) : [r]).map(r => splitCells(r).map(x => resolve(x.trim().replace(/\\n/g, '\n'), c).replace(/\\n/g, '\n')));
 }
 // Tables always fit their box: if the content is taller than el.h, drop the spacer gaps, then tighten rows.
 function compileTable(el: TableEl, c: Record<string, string>, b: Brand, prims: Prim[], xf: Xf) {
@@ -270,6 +279,10 @@ function drawTable(el: TableEl, c: Record<string, string>, b: Brand, prims: Prim
 export function arraysToContext(p: Property, c: Record<string, string>) {
   c.__suites = JSON.stringify(p.suites.map(s => [s.suite, s.sf, s.rate || '—', s.status, s.notes]));
   c.__suitesAvail = JSON.stringify(p.suites.filter(s => s.suite && !/leased/i.test(s.status)).map(s => `${s.suite}:|${s.sf}`));
+  const esc = (x: string) => (x || '').replace(/\|/g, '/');
+  c.__u_avail = JSON.stringify(p.suites.filter(s => s.suite && !/leased/i.test(s.status)).map(s => [s.suite, s.sf, s.rate || '—', s.notes].map(esc).join('|')));
+  c.__u_all = JSON.stringify(p.suites.filter(s => s.suite).map(s => [s.suite, s.sf, s.rate || '—', s.status, s.notes].map(esc).join('|')));
+  c.trafficList = (p.trafficPts || []).filter(t => t.on).map(t => `${t.label || 'Count'}: ${t.value.toLocaleString()} VPD${t.year ? ` (${t.source || ''} ${t.year})`.replace('( ', '(') : ''}`).join('\n');
   c.__comps = JSON.stringify(p.comps.map(s => [s.name + (s.address ? '\n' + s.address : ''), s.date, s.price, s.sf, s.ppsf, s.cap]));
 }
 

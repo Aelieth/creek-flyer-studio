@@ -1,6 +1,11 @@
 export type Suite = { suite: string; sf: string; rate: string; status: string; notes: string };
 export type Comp = { name: string; address: string; date: string; price: string; sf: string; ppsf: string; cap: string; notes: string };
-export type Poi = { id: string; name: string; kind: 'draw' | 'anchor' | 'retail' | 'custom'; lat: number; lon: number; on: boolean; dist?: number; logo?: string };
+// Retailer pin. Filled by OpenStreetMap search, by hand, or later by an automated agent (see docs/ai-agents.md).
+export type Poi = { id: string; name: string; kind: 'draw' | 'anchor' | 'retail' | 'custom'; lat: number; lon: number; on: boolean; dist?: number;
+  logo?: string; // data: URL or https URL of a logo the user has rights to use
+  category?: string; // e.g. grocery, restaurant, big-box, fitness
+  priority?: number; // 1 = must show; higher = drop first when the map gets crowded
+  source?: 'osm' | 'manual' | 'agent'; note?: string };
 export type TrafficPt = { id: string; label: string; value: number; year?: string; source?: string; lat: number; lon: number; on: boolean };
 export type Property = {
   id: string;
@@ -15,7 +20,13 @@ export type Property = {
   pois: Poi[]; trafficPts: TrafficPt[]; retailMap: string; ringMap: string;
   suites: Suite[]; comps: Comp[];
   photos: string[]; mapImg: string; sitePlan: string; aerial: string;
+  status?: ListingStatus; customFields?: { label: string; value: string }[]; notes?: string; rings?: number[];
+  photoAnn?: Record<string, PhotoAnn>; // keyed by original photo data hash-ish id
 };
+export type ListingStatus = 'Proposal' | 'Active' | 'Under Contract' | 'Closed' | 'Inactive';
+// Outline polygons on a photo, in normalized image coordinates (0..1, origin top-left). An agent can return this same
+// shape; the app bakes it onto the photo and keeps the original so outlines stay editable.
+export type PhotoAnn = { orig: string; polys: [number, number][][]; color: string; width: number; fill: number; labels?: string[]; source?: 'manual' | 'agent' };
 export type Brand = { company: string; tagline: string; primary: string; secondary: string; accent: string; dark: string; light: string;
   logo: string; logoLight: string; headFont: string; bodyFont: string; website: string; phone: string; disclaimer: string; censusKey: string; officeAddress?: string };
 export type Align = 'left' | 'center' | 'right' | 'justify';
@@ -28,9 +39,9 @@ export type TableEl = ElBase & { type: 'table'; rows: string; source?: 'rows' | 
   font?: string; size: number; color?: string; labelColor?: string; labelWeight?: number; headColor?: string; headFill?: string; headWeight?: number; rule?: string; ruleW?: number;
   rowH: number; rowGap?: number; override?: 'details'; skipEmpty?: boolean; zebra?: string };
 export type El = TextEl | RectEl | ImageEl | TableEl;
-export type Page = { els: El[] };
+export type Page = { els: El[]; name?: string; def?: string; kind?: string; opts?: Record<string, string | string[]>; fav?: boolean };
 export type DocSize = { id: string; label: string; w: number; h: number };
-export type Doc = { id: string; name: string; templateId: string; propertyId: string; size: DocSize; pages: Page[]; updated: number };
+export type Doc = { id: string; name: string; templateId: string; propertyId: string; size: DocSize; pages: Page[]; updated: number; access?: 'Private' | 'Team'; deleted?: number; size_kb?: number };
 export type State = { v: 2; properties: Property[]; activePropertyId: string; brand: Brand; docs: Doc[] };
 
 // px at 96 dpi

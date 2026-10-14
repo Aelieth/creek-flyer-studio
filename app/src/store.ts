@@ -14,7 +14,7 @@ export const newProperty = (o: Partial<Property> = {}): Property => ({
   highlights: 'Renovated lobby and common areas\nOn-site property management\nMonument signage available\nAbundant free surface parking\nMinutes to downtown and I-44',
   brokers: [{ name: 'Phil T', title: 'Associate', email: 'phil@example.com', phone: '405.555.0100', mobile: '405.555.0101' }, { name: 'Jordan Lee', title: 'Vice President', email: 'jlee@example.com', phone: '405.555.0102', mobile: '' }],
   lat: '35.6062', lon: '-97.5609', county: '', tract: '', floodZone: '', population: '', medianIncome: '', medianAge: '',
-  dem: { pop1: '9,812', pop3: '74,205', pop5: '198,630', hh1: '4,410', hh3: '31,877', hh5: '83,915', inc1: '$62,300', inc3: '$71,480', inc5: '$68,950', med1: '$54,100', med3: '$60,250', med5: '$57,800', growth1: '+3.1%', growth3: '+4.6%', growth5: '+3.9%', day1: '14,250', day3: '88,400', day5: '231,700' },
+  dem: { pop1: '9,812', pop3: '74,205', pop5: '198,630', hh1: '4,410', hh3: '31,877', hh5: '83,915', inc1: '$62,300', inc3: '$71,480', inc5: '$68,950', med1: '$54,100', med3: '$60,250', med5: '$57,800', growth1: '+3.1%', growth3: '+4.6%', growth5: '+3.9%', day1: '14,250', day3: '88,400', day5: '231,700', age1: '36.8', age3: '37.9', age5: '37.2', ageM1: '35.1', ageM3: '36.4', ageM5: '35.9', ageF1: '38.3', ageF3: '39.2', ageF5: '38.6', pph1: '2.22', pph3: '2.33', pph5: '2.37', hval1: '$214,600', hval3: '$238,900', hval5: '$226,300' },
   pois: SAMPLE_POIS.map((q, i) => ({ ...q, id: 's' + i, on: i < 12 })), trafficPts: [{ id: 't0', label: 'Kilpatrick Tpke', value: 80800, year: '2023', source: 'ODOT', lat: 35.60909, lon: -97.55618, on: true }], retailMap: '', ringMap: '',
   suites: [{ suite: 'Suite 100', sf: '2,150 SF', rate: '$18.50 SF/yr', status: 'Available', notes: 'Corner, open plan' },
     { suite: 'Suite 210', sf: '1,850 SF', rate: '$18.50 SF/yr', status: 'Available', notes: '4 offices' },
@@ -23,7 +23,8 @@ export const newProperty = (o: Partial<Property> = {}): Property => ({
   comps: [{ name: 'Northpark Plaza', address: '1200 NW 63rd St', date: '03/2026', price: '$2,900,000', sf: '38,000', ppsf: '$76.32', cap: '7.5%', notes: '' },
     { name: 'Lakeside Office', address: '3800 N Classen', date: '11/2025', price: '$4,100,000', sf: '51,200', ppsf: '$80.08', cap: '7.0%', notes: '' },
     { name: 'Penn Square Tower', address: '1900 NW Expwy', date: '07/2025', price: '$6,750,000', sf: '82,000', ppsf: '$82.32', cap: '6.8%', notes: '' }],
-  photos: [], mapImg: '', sitePlan: '', aerial: '', ...o,
+  photos: [], mapImg: '', sitePlan: '', aerial: '', status: 'Active', rings: [1, 3, 5], notes: 'Week of 10/5: 3 tours (2 medical, 1 professional office); LOI received on Suite 210 at $18.00 NNN.\nSigns refreshed; listing syndicated to 4 sites; e-blast to 2,400 brokers (31% open rate).\nNext: follow up on Suite 300 full-floor requirement (tenant rep: 12,000 SF need).',
+  customFields: [{ label: 'Signage', value: 'Monument & building' }, { label: 'Elevators', value: '2 passenger' }], photoAnn: {}, ...o,
 });
 export const defaultBrand: Brand = { company: 'Your Company', tagline: 'Commercial Real Estate', primary: '#003057', secondary: '#05664f', accent: '#3f8f7b', dark: '#272324', light: '#faf7e8',
   logo: '', logoLight: '', headFont: 'Playfair Display', bodyFont: 'Lato', website: 'www.example.com', phone: '405.555.0100',
@@ -39,7 +40,7 @@ export async function loadState(): Promise<State> {
   } catch { /* offline: no demo photos */ }
   try { // sample co-tenancy + ring maps for the demo record
     const p = st.properties[0]; const to = new Promise<never>((_, r) => setTimeout(() => r(new Error('timeout')), 9000));
-    const [m, r] = await Promise.race([Promise.all([drawRetailMap(p, st.brand, { mode: 'cotenancy', sat: true, siteLabel: 'SITE' }), drawRetailMap(p, st.brand, { mode: 'rings', siteLabel: 'SITE', H: 925 })]), to]);
+    const [m, r] = await Promise.race([Promise.all([drawRetailMap(p, st.brand, { mode: 'cotenancy', sat: true, siteLabel: 'SITE' }), drawRetailMap(p, st.brand, { mode: 'rings', siteLabel: 'SITE', H: 800 })]), to]);
     p.retailMap = m; p.ringMap = r;
   } catch { /* offline */ }
   return st;

@@ -100,7 +100,7 @@ export async function ringDemographics(lat: number, lon: number, key: string, ri
   const bgs = (await bgsWithin(lat, lon, 'ACS2023', R)).filter((b: any) => b.d <= R);
   if (!bgs.length) throw new Error('No census block groups found near this point');
   const counties = [...new Set(bgs.map((b: any) => b.st + ':' + b.co))] as string[];
-  const data = await acsByCounty(2023, ['B01003_001E', 'B11001_001E', 'B19013_001E', 'B19025_001E'], counties, key);
+  const data = await acsByCounty(2023, ['B01003_001E', 'B11001_001E', 'B19013_001E', 'B19025_001E', 'B01002_001E', 'B01002_002E', 'B01002_003E', 'B25077_001E', 'B25003_002E'], counties, key);
   log.push(`ACS 2023 5-yr: ${bgs.length} block groups in ${counties.length} count${counties.length > 1 ? 'ies' : 'y'} within ${R} mi`);
   const dem: Record<string, string> = {};
   let old: { d: number; pop: number }[] = [];
@@ -111,12 +111,16 @@ export async function ringDemographics(lat: number, lon: number, key: string, ri
     old = b19.map((b: any) => ({ d: b.d, pop: d19.get(b.geoid)?.[0] || 0 }));
   } catch (e) { log.push('Growth skipped: ' + (e as Error).message); }
   for (const r of rings) {
-    let pop = 0, hh = 0, agg = 0; const meds: [number, number][] = [];
+    let pop = 0, hh = 0, agg = 0; const meds: [number, number][] = []; const wa = [0, 0, 0, 0], ww = [0, 0, 0, 0];
     for (const b of bgs) { if (b.d > r) continue; const v = data.get(b.geoid); if (!v) continue;
-      const [p, h, m, a] = v; pop += Math.max(0, p); hh += Math.max(0, h); if (a > 0) agg += a; if (m > 0 && h > 0) meds.push([m, h]); }
+      const [p, h, m, a, ag, am, af, hv, own] = v; pop += Math.max(0, p); hh += Math.max(0, h); if (a > 0) agg += a; if (m > 0 && h > 0) meds.push([m, h]);
+      // medians can't be summed: population- (or owner-unit-) weighted average of block-group medians
+      [ag, am, af].forEach((x, i) => { if (x > 0 && p > 0) { wa[i] += x * p; ww[i] += p; } }); if (hv > 0 && own > 0) { wa[3] += hv * own; ww[3] += own; } }
     meds.sort((x, y) => x[0] - y[0]); let half = meds.reduce((s, x) => s + x[1], 0) / 2, med = 0;
     for (const [m, h] of meds) { half -= h; if (half <= 0) { med = m; break; } }
     dem['pop' + r] = num(pop); dem['hh' + r] = num(hh); dem['inc' + r] = money(hh ? agg / hh : 0); dem['med' + r] = money(med);
+    if (ww[0]) dem['age' + r] = (wa[0] / ww[0]).toFixed(1); if (ww[1]) dem['ageM' + r] = (wa[1] / ww[1]).toFixed(1); if (ww[2]) dem['ageF' + r] = (wa[2] / ww[2]).toFixed(1);
+    if (hh) dem['pph' + r] = (pop / hh).toFixed(2); if (ww[3]) dem['hval' + r] = money(wa[3] / ww[3]);
     const p19 = old.filter(o => o.d <= r).reduce((s, o) => s + o.pop, 0);
     if (p19 > 0) { const g = (pop / p19 - 1) * 100; dem['growth' + r] = (g >= 0 ? '+' : '') + g.toFixed(1) + '%'; }
     log.push(`${r} mi: pop ${dem['pop' + r]}, HH ${dem['hh' + r]}, avg inc ${dem['inc' + r]}${dem['growth' + r] ? ', growth ' + dem['growth' + r] : ''}`);
