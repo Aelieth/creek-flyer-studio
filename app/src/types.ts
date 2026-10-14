@@ -16,14 +16,14 @@ export type Property = {
 export type Brand = { company: string; tagline: string; primary: string; secondary: string; accent: string; dark: string; light: string;
   logo: string; logoLight: string; headFont: string; bodyFont: string; website: string; phone: string; disclaimer: string; censusKey: string };
 export type Align = 'left' | 'center' | 'right' | 'justify';
-export type ElBase = { id: string; showIf?: string; x: number; y: number; w: number; h: number; rot?: number; opacity?: number; locked?: boolean; name?: string };
+export type ElBase = { id: string; showIf?: string; flow?: string; flowIdx?: number; flowGap?: number; x: number; y: number; w: number; h: number; rot?: number; opacity?: number; locked?: boolean; name?: string };
 export type TextEl = ElBase & { type: 'text'; text: string; font?: string; weight?: number; size: number; color?: string; align?: Align; valign?: 'top' | 'middle' | 'bottom';
   lh?: number; ls?: number; upper?: boolean; autoFit?: boolean; fill?: string; pad?: number; italic?: boolean };
 export type RectEl = ElBase & { type: 'rect'; fill?: string; stroke?: string; sw?: number; radius?: number };
 export type ImageEl = ElBase & { type: 'image'; src: string; fit?: 'cover' | 'contain'; fx?: number; fy?: number; zoom?: number; radius?: number; gray?: boolean; tint?: string; tintAlpha?: number; stroke?: string; sw?: number };
 export type TableEl = ElBase & { type: 'table'; rows: string; source?: 'rows' | 'suites' | 'comps'; cols: number[]; aligns: Align[]; header?: boolean;
   font?: string; size: number; color?: string; labelColor?: string; labelWeight?: number; headColor?: string; headFill?: string; headWeight?: number; rule?: string; ruleW?: number;
-  rowH: number; skipEmpty?: boolean; zebra?: string };
+  rowH: number; rowGap?: number; skipEmpty?: boolean; zebra?: string };
 export type El = TextEl | RectEl | ImageEl | TableEl;
 export type Page = { els: El[] };
 export type DocSize = { id: string; label: string; w: number; h: number };

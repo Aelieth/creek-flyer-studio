@@ -53,7 +53,7 @@ export const fontOf = (f: string | undefined, b: Brand) => !f || f === '$body' ?
 // ---------- text measurement ----------
 const mctx = document.createElement('canvas').getContext('2d')!;
 export function measure(str: string, font: string, weight: number, size: number, ls: number, italic = false) {
-  mctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px "${font}"`;
+  mctx.font = `${italic ? 'italic ' : ''}${weight} ${size}px "${font}"`; str = str.replace(/\u00a0/g, ' ');
   return mctx.measureText(str).width + ls * Math.max(0, [...str].length);
 }
 type Line = { words: string[]; prefix?: string; indent: number; last: boolean };
@@ -119,8 +119,36 @@ export function imgReq(el: ImageEl, src: string, b: Brand): ImgReq {
 
 // ---------- compile ----------
 export type Compiled = { prims: Prim[]; imgs: ImgReq[]; overflow: string[] };
-export function compilePage(els: El[], p: Property, b: Brand, editing: boolean): Compiled {
+// Flow groups: columns (e.g. broker contacts) that sit side by side, each starting flowGap px after the
+// widest visible line of the previous column, so long emails/phones never collide and short ones stay tight.
+function applyFlow(els: El[], c: Record<string, string>, b: Brand): El[] {
+  const groups = new Map<string, El[]>();
+  for (const e of els) if (e.flow) { if (!groups.has(e.flow)) groups.set(e.flow, []); groups.get(e.flow)!.push(e); }
+  if (!groups.size) return els;
+  const shift = new Map<El, number>();
+  for (const g of groups.values()) {
+    const idxs = [...new Set(g.map(e => e.flowIdx ?? 0))].sort((a, b) => a - b);
+    let nextX: number | null = null;
+    for (const i of idxs) {
+      const col = g.filter(e => (e.flowIdx ?? 0) === i && !(e.showIf && !resolve(e.showIf, c).trim()));
+      if (!col.length) continue;
+      const minX: number = Math.min(...col.map(e => e.x)); const dx: number = nextX === null ? 0 : nextX - minX;
+      let right = minX;
+      for (const e of col) {
+        shift.set(e, dx);
+        if (e.type === 'text') {
+          const font = fontOf(e.font, b); const w = pickWeight(font, e.weight); const L = layoutText({ ...e, w: 2000 }, resolve(e.text, c), b);
+          for (const l of L.lines) right = Math.max(right, e.x + measure(l.str, font, w, L.size, (e.ls ?? 0) * L.size / 100, e.italic));
+        } else right = Math.max(right, e.x + e.w);
+      }
+      nextX = right + dx + (col[0].flowGap ?? 20);
+    }
+  }
+  return els.map(e => shift.has(e) && shift.get(e) ? { ...e, x: e.x + shift.get(e)! } as El : e);
+}
+export function compilePage(els0: El[], p: Property, b: Brand, editing: boolean): Compiled {
   const c = context(p, b); const prims: Prim[] = []; const imgs: ImgReq[] = []; const overflow: string[] = [];
+  const els = applyFlow(els0, c, b);
   for (const el of els) {
     if (el.showIf && !resolve(el.showIf, c).trim()) continue;
     const xf: Xf = { rot: el.rot || 0, cx: el.x + el.w / 2, cy: el.y + el.h / 2, opacity: el.opacity ?? 1 };
@@ -129,7 +157,7 @@ export function compilePage(els: El[], p: Property, b: Brand, editing: boolean):
       if (el.fill) prims.push({ k: 'rect', x: el.x, y: el.y, w: el.w, h: el.h, fill: color(el.fill, b), xf });
       const font = fontOf(el.font, b); const weight = pickWeight(font, el.weight);
       const L = layoutText(el, resolve(el.text, c), b); if (L.overflow) overflow.push(el.id);
-      for (const l of L.lines) prims.push({ k: 'text', x: l.x, y: l.y, str: l.str, font, weight, size: L.size, color: color(el.color, b) || '#000', ls: (el.ls ?? 0) * L.size / 100, italic: el.italic, xf });
+      for (const l of L.lines) prims.push({ k: 'text', x: l.x, y: l.y, str: l.str.replace(/\u00a0/g, ' '), font, weight, size: L.size, color: color(el.color, b) || '#000', ls: (el.ls ?? 0) * L.size / 100, italic: el.italic, xf });
     } else if (el.type === 'image') {
       const src = imageSrc(el.src, p, b);
       if (!src && (el.src === 'logo' || el.src === 'logoLight')) {
@@ -148,7 +176,7 @@ export function compilePage(els: El[], p: Property, b: Brand, editing: boolean):
 }
 const phLabel = (s: string) => s === 'logo' || s === 'logoLight' ? 'Logo · Brand tab' : s === 'map' ? 'Map · run address lookup' : s === 'sitePlan' ? 'Site plan · Property tab' : s.startsWith('photo:') ? `Photo ${+s.slice(6) + 1} · Property tab` : 'Image';
 function tableRows(el: TableEl, c: Record<string, string>): string[][] {
-  return el.rows.split('\n').filter(r => r.trim()).flatMap(r => r.trim() === '@suites' ? (JSON.parse(c.__suitesAvail || '[]') as string[]).map(x => x) : [r]).map(r => splitCells(r).map(x => resolve(x.trim().replace(/\\n/g, '\n'), c)));
+  return el.rows.split('\n').filter(r => r.trim()).flatMap(r => r.trim() === '@suites' ? (JSON.parse(c.__suitesAvail || '[]') as string[]).map(x => '\u0001' + x) : [r]).map(r => splitCells(r).map(x => resolve(x.trim().replace(/\\n/g, '\n'), c).replace(/\\n/g, '\n')));
 }
 function compileTable(el: TableEl, c: Record<string, string>, b: Brand, prims: Prim[], xf: Xf) {
   let rows: string[][];
@@ -156,7 +184,8 @@ function compileTable(el: TableEl, c: Record<string, string>, b: Brand, prims: P
   if (el.source === 'suites' || el.source === 'comps') rows = [rows[0] || [], ...(JSON.parse(c['__' + el.source] || '[]') as string[][])];
   const font = fontOf(el.font, b); const totalFr = el.cols.reduce((a, x) => a + x, 0);
   let y = el.y;
-  rows.forEach((r, ri) => {
+  rows.forEach((r0, ri) => {
+    const compact = (r0[0] || '').startsWith('\u0001'); const r = compact ? [r0[0].slice(1), ...r0.slice(1)] : r0;
     const isHead = el.header && ri === 0;
     if (!isHead && el.skipEmpty && r.slice(1).every(v => !v.trim())) return;
     const cells = el.cols.map((fr, ci) => {
@@ -176,6 +205,7 @@ function compileTable(el: TableEl, c: Record<string, string>, b: Brand, prims: P
     });
     y += rh;
     if (el.rule) prims.push({ k: 'rect', x: el.x, y: y - (el.ruleW ?? 1), w: el.w, h: el.ruleW ?? 1, fill: color(el.rule, b), xf });
+    if (el.rowGap && !compact && !isHead) { y += el.rowGap; if (el.rule) prims.push({ k: 'rect', x: el.x, y: y - (el.ruleW ?? 1), w: el.w, h: el.ruleW ?? 1, fill: color(el.rule, b), xf }); }
   });
 }
 export function arraysToContext(p: Property, c: Record<string, string>) {

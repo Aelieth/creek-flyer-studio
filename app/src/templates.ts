@@ -16,27 +16,30 @@ const S = (id: string) => SIZES.find(s => s.id === id)!;
 const W = 816;
 const classicHeader = (w = W, right = '{{cityStateZip|upper}}'): El[] => [
   I(35, 25, 509, 60, 'logo', { fit: 'contain', fx: 0, name: 'logo' }),
-  T(w - 151, 14, 110, 80, '{{forLabel|upper}}', { font: '$head', weight: 400, size: 28, color: '$primary', align: 'right', lh: 1.1, ls: 6, valign: 'top', name: 'listing label' }),
+  T(w - 151, 14, 110, 80, '{{forLabel|upper}}', { font: '$head', weight: 400, size: 28, color: '$primary', align: 'right', lh: 1.1, ls: 7.5, valign: 'top', name: 'listing label' }),
   R(0, 100, w, 50, '$primary', { name: 'title band' }),
-  T(35, 100, w * 0.55, 50, '{{name|upper}}', { font: '$head', size: 30, color: '#ffffff', valign: 'middle', autoFit: true, lh: 1.05, ls: 2, name: 'title' }),
-  T(w * 0.55 + 45, 100, w * 0.45 - 81, 50, right, { font: '$head', size: 17, color: '#ffffff', valign: 'middle', align: 'right', autoFit: true, ls: 6, name: 'city' }),
+  T(35, 100, w * 0.55, 50, '{{name|upper}}', { font: '$head', size: 30, color: '#ffffff', valign: 'middle', autoFit: true, lh: 1.05, ls: 2.5, name: 'title' }),
+  T(w * 0.55 + 45, 100, w * 0.45 - 81, 50, right, { font: '$head', size: 17, color: '#ffffff', valign: 'middle', align: 'right', autoFit: true, ls: 4.5, name: 'city' }),
 ];
-const brokerCol = (n: number, x: number, y: number, w = 190): El[] => [
-  R(x, y, 3, 65, '$primary', { showIf: `{{broker${n}Name}}` }),
-  T(x + 18, y + 2, w, 20, `{{broker${n}Name|upper}}`, { font: 'Barlow Condensed', weight: 600, size: 16, color: '$secondary', showIf: `{{broker${n}Name}}` }),
-  T(x + 18, y + 20, w, 46, `{{broker${n}Email}}\n{{broker${n}Phone|pre:O: }}{{broker${n}Mobile|pre: C: }}`, { font: 'Barlow Condensed', weight: 400, size: 14, color: '#414042', lh: 1.22, autoFit: true, showIf: `{{broker${n}Name}}` }),
-];
+const brokerCol = (n: number, x: number, y: number, w = 190): El[] => {
+  const f = { showIf: `{{broker${n}Name}}`, flow: 'brokers', flowIdx: n, flowGap: 20 };
+  return [
+    R(x, y, 3, 65, '$primary', f),
+    T(x + 18, y + 2, w, 20, `{{broker${n}Name|upper}}`, { font: 'Barlow Condensed', weight: 600, size: 16, ls: 3.3, color: '$secondary', ...f }),
+    T(x + 18, y + 16, w, 50, `{{broker${n}Email}}\n{{broker${n}Phone|pre:O: }}{{broker${n}Mobile|pre: \u00a0C: }}`, { font: 'Barlow Condensed', weight: 400, size: 14, ls: 1, color: '#414042', lh: 1.32, autoFit: true, ...f }),
+  ];
+};
 const classicFooter = (h = 1056, w = W): El[] => [
   ...brokerCol(1, 35, h - 102), ...brokerCol(2, 35 + (w > 900 ? 222 : 200), h - 102), ...brokerCol(3, 35 + (w > 900 ? 444 : 400), h - 102),
   T(35, h - 30, w - 70, 14, '{{disclaimer}}', { font: 'Barlow Condensed', size: 8.5, color: '#221e1f', autoFit: true, name: 'disclaimer' }),
 ];
-const sectionHead = (x: number, y: number, w: number, text: string): El => T(x, y, w, 18, text, { weight: 800, size: 14, color: '$secondary', ls: 8, upper: true });
-const offering = (x: number, y: number, rows: string, h = 260): El[] => [
-  T(x + 5, y + 2, 360, 22, 'Offering Summary', { weight: 800, size: 13, color: '$secondary', ls: 8, upper: true }),
+const sectionHead = (x: number, y: number, w: number, text: string): El => T(x, y - 4, w, 18, text, { weight: 800, size: 13, color: '$secondary', ls: 6, upper: true });
+const offering = (x: number, y: number, rows: string, h = 260, rowGap = 15): El[] => [
+  T(x + 5, y + 1, 360, 18, 'Offering Summary', { weight: 800, size: 13, color: '$secondary', ls: 6.5, upper: true }),
   R(x, y + 23, 365, 4, '$light'),
-  TB(x, y + 27, 365, h, rows, {}),
+  TB(x, y + 25, 365, h, rows, { rowGap }),
 ];
-const leaseRows = '@suites\nLease Rate:|{{leaseRate}}{{leaseType|pre: (|post:)}}\nAvailable SF:|{{availableSf}}\nBuilding SF:|{{buildingSf}}\nOffice SF:|{{officeSf}}\nLot Size:|{{lotAcres}}\nClear Height:|{{clearHeight}}\nYear Built:|{{yearBuilt}}\nZoning:|{{zoning}}\nMarket:|{{market}}';
+const leaseRows = '@suites\nLease Rate:|{{leaseRate}}{{leaseType|pre: (|post:)}}\nAvailable SF:|{{availableSf}}\nBuilding Size:|{{buildingSf}}\nOffice SF:|{{officeSf}}\nLot Size:|{{lotAcres}}\nClear Height:|{{clearHeight}}\nYear Built:|{{yearBuilt}}\nZoning:|{{zoning}}\nMarket:|{{market}}';
 const saleRows = 'Sale Price:|{{price}}\nCap Rate:|{{capRate}}\nNOI:|{{noi}}\nBuilding SF:|{{buildingSf}}\nLot Size:|{{lotAcres}}\nYear Built:|{{yearBuilt}}\nZoning:|{{zoning}}\nMarket:|{{market}}';
 const anyRows = 'Sale Price:|{{price}}\n' + leaseRows;
 
@@ -54,9 +57,9 @@ const P: PageDef[] = [
   { id: 'classic-summary-right', name: 'Classic Band · Summary right', size: 'letter', make: () => [
     ...classicHeader(), I(0, 150, W, 383, 'photo:0', { name: 'hero photo' }),
     sectionHead(35, 549, 365, 'Location Description'),
-    T(35, 568, 365, 150, '{{locationDescription}}', { size: 12.9, lh: 1.4, autoFit: true }),
-    sectionHead(35, 732, 365, 'Property Highlights'),
-    T(35, 754, 365, 180, '{{highlights|bullets}}', { size: 12, lh: 2.15, autoFit: true }),
+    T(35, 564.5, 316, 160, '{{locationDescription}}', { size: 12, lh: 1.4, autoFit: true }),
+    sectionHead(35, 738, 365, 'Property Highlights'),
+    T(35, 741, 365, 185, '{{highlights|bullets}}', { size: 12, lh: 2.25, autoFit: true }),
     ...offering(416, 549, anyRows, 360),
     ...classicFooter()] },
   { id: 'classic-demographics', name: 'Classic Band · Demographics', size: 'letter', make: () => [
@@ -65,7 +68,7 @@ const P: PageDef[] = [
     T(35, 568, 365, 100, '{{description}}', { size: 12.9, lh: 1.4, align: 'justify', autoFit: true }),
     sectionHead(35, 664, 365, 'Property Highlights'),
     T(35, 686, 365, 230, '{{highlights|bullets}}', { size: 12, lh: 2.1, autoFit: true }),
-    ...offering(416, 549, 'Lease Rate:|{{leaseRate}}\nSale Price:|{{price}}\nAvailable SF:|{{availableSf}}\nBuilding Size:|{{buildingSf}}', 110),
+    ...offering(416, 549, 'Lease Rate:|{{leaseRate}}\nSale Price:|{{price}}\nAvailable SF:|{{availableSf}}\nBuilding Size:|{{buildingSf}}', 110, 0),
     TB(416, 673, 365, 120, 'Demographics|1 Mile|3 Miles|5 Miles\nTotal Households|{{dem_hh1}}|{{dem_hh3}}|{{dem_hh5}}\nTotal Population|{{dem_pop1}}|{{dem_pop3}}|{{dem_pop5}}\nAverage HH Income|{{dem_inc1}}|{{dem_inc3}}|{{dem_inc5}}',
       { cols: [145, 67, 76, 77], aligns: ['left', 'left', 'left', 'left'], header: true, headColor: '$secondary', headWeight: 800, rowH: 26, skipEmpty: false }),
     R(416, 696, 365, 4, '$light'),
@@ -78,7 +81,7 @@ const P: PageDef[] = [
     const w = 1056; const feats = [['dollar', '{{leaseRate}}'], ['building', '{{buildingClass|pre:Class }}'], ['car', '{{parking|pre:Parking }}'], ['people', 'On-Site Management'], ['shield', 'Secured Access'], ['pin', '{{market}}'], ['food', 'Nearby Dining'], ['road', '{{traffic}}']];
     const step = w / (feats.length + 1);
     return [...classicHeader(w, '{{address|upper|post: }}{{cityStateZip|upper}}'), I(0, 150, w, 428, 'photo:0'), R(0, 528, w, 50, '$primary', { opacity: 0.75 }),
-      T(35, 528, w - 70, 50, '{{availableSf|upper|post: FOR }}{{listing|upper}}', { font: '$head', size: 23, color: '#ffffff', valign: 'middle', ls: 2 }),
+      T(35, 528, w - 70, 50, '{{availableSf|upper|post: FOR }}{{listing|upper}}', { font: '$head', size: 23, color: '#ffffff', valign: 'middle', ls: 3 }),
       R(0, 578, w, 113, '$primary'),
       ...feats.flatMap(([ic, label], i) => [I(step * (i + 1) - 25, 592, 50, 50, 'icon:' + ic, { fit: 'contain' }),
         T(step * (i + 1) - step / 2 + 2, 646, step - 4, 40, label, { font: 'Open Sans', weight: 700, size: 9.5, color: '#ffffff', align: 'center', lh: 1.15, autoFit: true })]),
