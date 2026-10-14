@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Brand, Poi, Property } from './types';
 import { fileToDataUrl } from './store';
-import { drawRetailMap, fetchPois, fetchTraffic, fmtVpd, ringDemographics } from './retail';
+import { drawRetailMap, fetchPois, fetchTraffic, fmtVpd, nameRoads, ringDemographics } from './retail';
 type Props = { p: Property; b: Brand; upd: (f: (p: Property) => Property) => void; goBrand?: () => void };
 const DEM_ROWS: [string, string][] = [['pop', 'Population'], ['hh', 'Households'], ['med', 'Median HH income'], ['inc', 'Average HH income'], ['day', 'Daytime population'], ['growth', 'Pop. growth (2019–23)']];
 export function DemographicsCard({ p, b, upd, goBrand }: Props) {
@@ -30,8 +30,8 @@ export function RetailMapCard({ p, b, upd }: Props) {
   const pull = async () => { setBusy('pois'); setLog(['Searching OpenStreetMap for retailers and traffic generators (public servers can take up to a minute)…']);
     try { const r = await fetchPois(+p.lat, +p.lon); upd(x => ({ ...x, pois: [...x.pois.filter(q => q.kind === 'custom' || q.logo), ...r.filter(q => !x.pois.some(o => (o.kind === 'custom' || o.logo) && o.name === q.name))] })); setLog([`Found ${r.length} nearby places; the top 12 are switched on.`]); }
     catch (e) { setLog([(e as Error).message]); } setBusy(''); };
-  const pullTraffic = async () => { setBusy('traffic'); try { const r = await fetchTraffic(+p.lat, +p.lon, p.state);
-      upd(x => ({ ...x, trafficPts: r, traffic: r[0] ? fmtVpd(r[0].value) : x.traffic })); setLog([`${r.length} traffic counts (${r[0]?.source || ''} ${r[0]?.year || ''}). Name each road below.`]); }
+  const pullTraffic = async () => { setBusy('traffic'); try { const r = await nameRoads(await fetchTraffic(+p.lat, +p.lon, p.state));
+      upd(x => ({ ...x, trafficPts: r, traffic: r[0] ? fmtVpd(r[0].value) : x.traffic })); setLog([`${r.length} traffic counts (${r[0]?.source || ''} ${r[0]?.year || ''}). Road names from OpenStreetMap; edit if needed.`]); }
     catch (e) { setLog([(e as Error).message]); } setBusy(''); };
   const draw = async () => { setBusy('draw');
     try { const [m, r] = await Promise.all([drawRetailMap(p, b, { mode: 'cotenancy', sat, z, siteLabel: label }), drawRetailMap(p, b, { mode: 'rings', sat: false, siteLabel: label, H: 925 })]);

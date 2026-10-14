@@ -9,7 +9,7 @@ export function BrandTab({ b, setB, state, load }: { b: Brand; setB: (f: (x: Bra
     {b[k] && <button className="sm" onClick={() => f(k)('')}>Remove</button>}</div>;
   return <div className="page-form">
     <section className="card"><h2>Brand kit <small>applies to every template</small></h2><div className="grid">
-      <Field label="Company" v={b.company} on={f('company')} /><Field label="Tagline" v={b.tagline} on={f('tagline')} /><Field label="Website" v={b.website} on={f('website')} /><Field label="Main phone" v={b.phone} on={f('phone')} />
+      <Field label="Company" v={b.company} on={f('company')} /><Field label="Tagline" v={b.tagline} on={f('tagline')} /><Field label="Website" v={b.website} on={f('website')} /><Field label="Office address (brochure footer)" v={b.officeAddress || ''} on={f('officeAddress')} /><Field label="Main phone" v={b.phone} on={f('phone')} />
       {(['primary', 'secondary', 'accent', 'dark', 'light'] as const).map(k => <label key={k} className="field"><span>{k} color</span><div className="row"><input type="color" value={b[k]} onChange={e => f(k)(e.target.value)} /><input value={b[k]} onChange={e => f(k)(e.target.value)} style={{ width: 90 }} /></div></label>)}
       <label className="field"><span>Heading font</span><select value={b.headFont} onChange={e => f('headFont')(e.target.value)}>{FONT_NAMES.map(o => <option key={o}>{o}</option>)}</select></label>
       <label className="field"><span>Body font</span><select value={b.bodyFont} onChange={e => f('bodyFont')(e.target.value)}>{FONT_NAMES.map(o => <option key={o}>{o}</option>)}</select></label>

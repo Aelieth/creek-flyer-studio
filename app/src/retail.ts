@@ -202,3 +202,18 @@ export async function drawRetailMap(p: Property, b: Brand, o: MapOpts): Promise<
   const aw = g.measureText(attr).width + 12; g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillRect(W - aw, H - 22, aw, 22); g.fillStyle = '#333'; g.textBaseline = 'middle'; g.fillText(attr, W - aw + 6, H - 11);
   return c.toDataURL('image/jpeg', 0.88);
 }
+// Friendly road names for count stations: nearest street from OpenStreetMap (Nominatim reverse, ≤1 req/s).
+export async function nameRoads(pts: TrafficPt[]): Promise<TrafficPt[]> {
+  const out: TrafficPt[] = [];
+  for (const [i, t] of pts.entries()) {
+    if (t.label && !/^[A-Z]{2}\d|^\d/.test(t.label)) { out.push(t); continue; }
+    if (i) await new Promise(r => setTimeout(r, 1100));
+    try {
+      const j = await getJson(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&lat=${t.lat}&lon=${t.lon}`, undefined, 10000);
+      const road = j?.address?.road || j?.name || '';
+      out.push({ ...t, label: road ? shortRoad(road) : t.label });
+    } catch { out.push(t); }
+  }
+  return out;
+}
+const shortRoad = (s: string) => s.replace(/\bTurnpike\b/, 'Tpke').replace(/\bExpressway\b/, 'Expy').replace(/\bParkway\b/, 'Pkwy').replace(/\bBoulevard\b/, 'Blvd').replace(/\bAvenue\b/, 'Ave').replace(/\bStreet\b/, 'St').replace(/\bRoad\b/, 'Rd').replace(/\bDrive\b/, 'Dr').replace(/^(North|South|East|West)(west|east)? /, (m) => m.split(' ')[0].replace('Northwest', 'NW').replace('Northeast', 'NE').replace('Southwest', 'SW').replace('Southeast', 'SE').replace('North', 'N').replace('South', 'S').replace('East', 'E').replace('West', 'W') + ' ');

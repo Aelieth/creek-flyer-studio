@@ -53,7 +53,8 @@ export function PropertyTab({ props, active: p, b, setActive, upd, add, remove, 
       <Field label="Zoning" v={p.zoning} on={f('zoning')} /><Field label="Parking" v={p.parking} on={f('parking')} /><Field label="Clear height" v={p.clearHeight} on={f('clearHeight')} /><Field label="Building class" v={p.buildingClass} on={f('buildingClass')} />
       <Field label="Market / submarket" v={p.market} on={f('market')} /><Field label="Traffic count" v={p.traffic} on={f('traffic')} /><Field label="Cap rate" v={p.capRate} on={f('capRate')} /><Field label="NOI" v={p.noi} on={f('noi')} />
       <Field label="Property description" v={p.description} on={f('description')} area wide={4} />
-      <Field label="Location description" v={p.locationDescription} on={f('locationDescription')} area rows={2} wide={2} /><Field label="Highlights (one per line)" v={p.highlights} on={f('highlights')} area rows={4} wide={2} />
+      <Field label="Location description" v={p.locationDescription} on={f('locationDescription')} area rows={2} wide={2} /><Field label="Custom Details rows (optional: one 'Label: Value' per line; replaces the standard list)" v={p.details || ''} on={f('details')} area rows={3} wide={4} />
+      <Field label="Highlights (one per line)" v={p.highlights} on={f('highlights')} area rows={4} wide={2} />
     </div></section>
     <section className="card"><h2>Brokers <small>up to 3; empty columns hide automatically</small></h2><div className="grid5">
       {brokers.map((br, i) => <div key={i} className="brk"><b>Broker {i + 1}</b>{(['name', 'title', 'email', 'phone', 'mobile'] as const).map(k => <input key={k} placeholder={k} value={br[k]} onChange={e => setBroker(i, k, e.target.value)} />)}</div>)}
