@@ -8,7 +8,7 @@ const K = 0.75; // px -> pt
 export async function buildPdf(doc: Doc, p: Property, b: Brand): Promise<jsPDF> {
   const W = doc.size.w * K, H = doc.size.h * K;
   const pdf = new jsPDF({ unit: 'pt', format: [W, H], orientation: W > H ? 'landscape' : 'portrait', compress: true, putOnlyUsedFonts: true });
-  pdf.setProperties({ title: doc.name, creator: 'Creek Flyer Studio' });
+  pdf.setProperties({ title: doc.name, creator: 'Creek Flyer Hub · Creek Price Edwards' });
   const pages = doc.pages.map(pg => compilePage(pg.els, p, b, false));
   const fonts = new Set<string>(); pages.forEach(c => c.prims.forEach(q => q.k === 'text' && fonts.add(q.font + '|' + q.weight)));
   for (const f of fonts) { const [fam, w] = f.split('|'); const name = `${fam.replace(/ /g, '')}-${w}`; pdf.addFileToVFS(name + '.ttf', await fontBase64(fam, +w)); pdf.addFont(name + '.ttf', name, 'normal'); }

@@ -11,11 +11,12 @@ export const TOUR: TourStep[] = [
 
 export function Welcome({ onTour, onBlank, onClose }: { onTour: () => void; onBlank: () => void; onClose: () => void }) {
   return <div className="modal-bg" onClick={onClose}><div className="modal welcome" onClick={e => e.stopPropagation()}>
-    <h2>Welcome to Creek Flyer Studio</h2>
+    <img className="welcome-logo" src={`${import.meta.env.BASE_URL}brand/creekpe-logo.svg`} alt="Creek Price Edwards" />
+    <h2>Welcome to Creek Flyer Hub</h2>
     <p>Build on-brand flyers, brochures, offering memoranda, social posts, email blasts and listing websites from a single property record.</p>
-    <ol className="steps"><li><b>Property</b> enter or look up the listing</li><li><b>Brand</b> logo, colors, fonts</li><li><b>Templates</b> pick a layout</li><li><b>Design</b> tweak and export PDF</li><li><b>Publish</b> microsite and email</li></ol>
-    <p className="muted">A sample property (<i>Riverside Business Center</i>, fictional) is loaded so you can try everything right away. Your work is saved in this browser only.</p>
-    <div className="row end"><button onClick={onBlank}>Start with a blank property</button><button onClick={onClose}>Explore the sample</button><button className="primary" onClick={onTour}>Take the 1-minute tour</button></div>
+    <ol className="steps"><li><b>Listing</b> enter or look up the listing</li><li><b>Brand</b> logo, colors, fonts</li><li><b>Templates</b> pick a layout</li><li><b>Design</b> tweak and export PDF</li><li><b>Publish</b> microsite and email</li></ol>
+    <p className="muted">A sample listing (<i>Riverside Business Center</i>, fictional) is loaded so you can try everything right away. Your work is saved in this browser only.</p>
+    <div className="row end"><button onClick={onBlank}>Start with a blank listing</button><button onClick={onClose}>Explore the sample</button><button className="primary" onClick={onTour}>Take the 1-minute tour</button></div>
   </div></div>;
 }
 

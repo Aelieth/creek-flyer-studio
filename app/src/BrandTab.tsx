@@ -1,12 +1,13 @@
 import type { Brand, State } from './types';
 import { Field } from './ui';
 import { FONT_NAMES } from './fonts';
-import { download, fileToDataUrl } from './store';
+import { download, fileToDataUrl, svgToPng } from './store';
 export function BrandTab({ b, setB, state, load }: { b: Brand; setB: (f: (x: Brand) => Brand) => void; state: State; load: (s: State) => void }) {
   const f = (k: keyof Brand) => (s: string) => setB(x => ({ ...x, [k]: s }));
   const logo = (k: 'logo' | 'logoLight', label: string, bg: string) => <div className="logoprev" style={{ background: bg }}><span>{label}</span>{b[k] ? <img src={b[k]} /> : <i>none — company name is used</i>}
     <label className="btn sm">Upload<input hidden type="file" accept="image/*" onChange={async e => { const fl = e.target.files?.[0]; if (fl) { const d = await fileToDataUrl(fl, 1600); setB(x => ({ ...x, [k]: d })); } }} /></label>
-    {b[k] && <button className="sm" onClick={() => f(k)('')}>Remove</button>}</div>;
+    {b[k] && <button className="sm" onClick={() => { localStorage.setItem('cfs.logoCleared', '1'); f(k)(''); }}>Remove</button>}
+    <button className="sm" title="Use the Creek Price Edwards logo from creekpe.com" onClick={async () => { const d = await svgToPng(`${import.meta.env.BASE_URL}brand/${k === 'logo' ? 'creekpe-logo.svg' : 'creekpe-logo-white.svg'}`); setB(x => ({ ...x, [k]: d })); }}>Creek logo</button></div>;
   return <div className="page-form">
     <section className="card"><h2>Brand kit <small>applies to every template</small></h2><div className="grid">
       <Field label="Company" v={b.company} on={f('company')} /><Field label="Tagline" v={b.tagline} on={f('tagline')} /><Field label="Website" v={b.website} on={f('website')} /><Field label="Office address (brochure footer)" v={b.officeAddress || ''} on={f('officeAddress')} /><Field label="Main phone" v={b.phone} on={f('phone')} />
