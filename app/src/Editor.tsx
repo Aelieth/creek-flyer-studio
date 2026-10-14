@@ -1,8 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { Align, Brand, Doc, El, ImageEl, Property, TableEl, TextEl } from './types';
+import type { Align, Brand, Doc, El, ImageEl, Page, Property, TableEl, TextEl } from './types';
 import { SIZES } from './types';
 import { SvgPage } from './SvgPage';
-import { PAGES, fitEls, makePage, sizeOf } from './templates';
+import { PAGES, fitEls, makePage, makeSmartPage, rerenderPage, sizeOf } from './templates';
+import { drawRetailMap, ringDemographics } from './retail';
+import { PageOptions, AddPageDialog, CopyHelper, pageName } from './PagePanels';
 import { uid, download, fileToDataUrl } from './store';
 import { exportPdf, renderPng, safeName } from './pdf';
 import { ColorPick, Num } from './ui';
@@ -11,23 +13,25 @@ import { fontOf } from './compile';
 import { ICONS } from './icons';
 
 type Sel = { page: number; id: string } | null;
+type Panel = 'settings' | 'pages' | 'blocks' | 'images' | 'layers' | 'assist';
 type Drag = { mode: 'move' | 'resize' | 'rotate'; hx: number; hy: number; sx: number; sy: number; o: El; page: number; snapshot: Doc['pages'] };
 type Guide = { x?: number; y?: number };
 const HANDLES: [number, number][] = [[-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0]];
 const TOKENS = ['name', 'fullAddress', 'address', 'cityStateZip', 'forLabel', 'price', 'leaseRate', 'leaseType', 'priceOrRate', 'availableSf', 'buildingSf', 'lotAcres', 'yearBuilt', 'zoning', 'parking', 'clearHeight', 'traffic', 'capRate', 'noi', 'description', 'locationDescription', 'highlights|bullets', 'county', 'floodZone', 'population', 'medianIncome', 'broker1Name', 'broker1Phone', 'broker1Email', 'company', 'website', 'disclaimer'];
 
 export function Editor(props: {
-  doc: Doc | null; docs: Doc[]; setDoc: (d: Doc) => void; props: Property[]; b: Brand; openDoc: (id: string) => void; newDocFromGallery: () => void; deleteDoc: (id: string) => void; dupDoc: (d: Doc) => void }) {
+  doc: Doc | null; docs: Doc[]; setDoc: (d: Doc) => void; props: Property[]; b: Brand; openDoc: (id: string) => void; newDocFromGallery: () => void; deleteDoc: (id: string) => void; dupDoc: (d: Doc) => void; updProp: (id: string, f: (p: Property) => Property) => void; goListing: (sub?: string) => void }) {
   const { doc, docs, openDoc, deleteDoc, newDocFromGallery } = props;
   if (!doc) return <div className="design"><aside className="left"><DocList docs={docs} cur={null} openDoc={openDoc} deleteDoc={deleteDoc} /></aside>
     <main className="center"><div className="empty">No document open. <button className="primary" onClick={newDocFromGallery}>Open the template gallery</button></div></main><aside className="right" /></div>;
   return <DocEditor key={doc.id} {...props} doc={doc} />;
 }
-function DocEditor({ doc, docs, setDoc, props, b, openDoc, newDocFromGallery, deleteDoc, dupDoc }: {
-  doc: Doc; docs: Doc[]; setDoc: (d: Doc) => void; props: Property[]; b: Brand; openDoc: (id: string) => void; newDocFromGallery: () => void; deleteDoc: (id: string) => void; dupDoc: (d: Doc) => void }) {
+function DocEditor({ doc, docs, setDoc, props, b, openDoc, newDocFromGallery, deleteDoc, dupDoc, updProp, goListing }: {
+  doc: Doc; docs: Doc[]; setDoc: (d: Doc) => void; props: Property[]; b: Brand; openDoc: (id: string) => void; newDocFromGallery: () => void; deleteDoc: (id: string) => void; dupDoc: (d: Doc) => void; updProp: (id: string, f: (p: Property) => Property) => void; goListing: (sub?: string) => void }) {
   const [sel, setSel] = useState<Sel>(null); const [zoom, setZoom] = useState(0.8); const [snap, setSnap] = useState(true);
   const [guides, setGuides] = useState<Guide[]>([]); const [busy, setBusy] = useState(''); const [editing, setEditing] = useState<string | null>(null);
-  const [overflow, setOverflow] = useState<Record<number, string[]>>({}); const [lib, setLib] = useState(false);
+  const [overflow, setOverflow] = useState<Record<number, string[]>>({});
+  const [panel, setPanel] = useState<Panel>('pages'); const [pageSel, setPageSel] = useState<number | null>(null); const [pq, setPq] = useState(''); const [adding, setAdding] = useState(false);
   const hist = useRef<{ past: Doc['pages'][]; future: Doc['pages'][] }>({ past: [], future: [] });
   const drag = useRef<Drag | null>(null); const clip = useRef<El | null>(null); const centerRef = useRef<HTMLDivElement>(null);
   const svgRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -38,14 +42,14 @@ function DocEditor({ doc, docs, setDoc, props, b, openDoc, newDocFromGallery, de
   const W = doc.size.w, H = doc.size.h;
   const commit = (pages: Doc['pages'], record = true) => { if (record) { hist.current.past.push(doc.pages); hist.current.future = []; if (hist.current.past.length > 150) hist.current.past.shift(); } setDoc({ ...doc, pages, updated: Date.now() }); };
   const selEl = sel ? doc.pages[sel.page]?.els.find(e => e.id === sel.id) : undefined;
-  const upd = (patch: Partial<El>, record = true) => { if (!sel) return; commit(doc.pages.map((pg, i) => i !== sel.page ? pg : { els: pg.els.map(e => e.id === sel.id ? { ...e, ...patch } as El : e) }), record); };
+  const upd = (patch: Partial<El>, record = true) => { if (!sel) return; commit(doc.pages.map((pg, i) => i !== sel.page ? pg : { ...pg, els: pg.els.map(e => e.id === sel.id ? { ...e, ...patch } as El : e) }), record); };
   const undo = () => { const h = hist.current; if (!h.past.length) return; h.future.push(doc.pages); setDoc({ ...doc, pages: h.past.pop()! }); };
   const redo = () => { const h = hist.current; if (!h.future.length) return; h.past.push(doc.pages); setDoc({ ...doc, pages: h.future.pop()! }); };
-  const add = (e: Partial<El> & { type: El['type'] }) => { const pg = sel?.page ?? 0; const n = { x: W / 2 - 150, y: H / 2 - 60, w: 300, h: 120, ...e, id: uid() } as El; commit(doc.pages.map((x, i) => i === pg ? { els: [...x.els, n] } : x)); setSel({ page: pg, id: n.id }); };
-  const del = () => { if (!sel) return; commit(doc.pages.map((pg, i) => i !== sel.page ? pg : { els: pg.els.filter(e => e.id !== sel.id) })); setSel(null); };
-  const dup = (src = selEl, page = sel?.page ?? 0) => { if (!src) return; const n = { ...src, id: uid(), x: src.x + 16, y: src.y + 16 } as El; commit(doc.pages.map((pg, i) => i === page ? { els: [...pg.els, n] } : pg)); setSel({ page, id: n.id }); };
+  const add = (e: Partial<El> & { type: El['type'] }) => { const pg = sel?.page ?? 0; const n = { x: W / 2 - 150, y: H / 2 - 60, w: 300, h: 120, ...e, id: uid() } as El; commit(doc.pages.map((x, i) => i === pg ? { ...x, els: [...x.els, n] } : x)); setSel({ page: pg, id: n.id }); };
+  const del = () => { if (!sel) return; commit(doc.pages.map((pg, i) => i !== sel.page ? pg : { ...pg, els: pg.els.filter(e => e.id !== sel.id) })); setSel(null); };
+  const dup = (src = selEl, page = sel?.page ?? 0) => { if (!src) return; const n = { ...src, id: uid(), x: src.x + 16, y: src.y + 16 } as El; commit(doc.pages.map((pg, i) => i === page ? { ...pg, els: [...pg.els, n] } : pg)); setSel({ page, id: n.id }); };
   const order = (dir: 'front' | 'back' | 'up' | 'down') => { if (!sel) return; commit(doc.pages.map((pg, i) => { if (i !== sel.page) return pg; const a = [...pg.els]; const k = a.findIndex(e => e.id === sel.id); const [it] = a.splice(k, 1);
-    a.splice(dir === 'front' ? a.length : dir === 'back' ? 0 : dir === 'up' ? Math.min(a.length, k + 1) : Math.max(0, k - 1), 0, it); return { els: a }; })); };
+    a.splice(dir === 'front' ? a.length : dir === 'back' ? 0 : dir === 'up' ? Math.min(a.length, k + 1) : Math.max(0, k - 1), 0, it); return { ...pg, els: a }; })); };
   const alignTo = (how: 'l' | 'cx' | 'r' | 't' | 'cy' | 'b') => selEl && upd(how === 'l' ? { x: 35 } : how === 'cx' ? { x: Math.round((W - selEl.w) / 2) } : how === 'r' ? { x: W - 35 - selEl.w } : how === 't' ? { y: 35 } : how === 'cy' ? { y: Math.round((H - selEl.h) / 2) } : { y: H - 35 - selEl.h });
 
   // ---- pointer interaction ----
@@ -80,7 +84,7 @@ function DocEditor({ doc, docs, setDoc, props, b, openDoc, newDocFromGallery, de
         a = ((a % 360) + 360) % 360; if (snap && (a < 3 || a > 357)) a = 0; patch = { rot: a };
       }
       setGuides(gs);
-      setDoc({ ...doc, pages: doc.pages.map((pg, i) => i !== d.page ? pg : { els: pg.els.map(e => e.id === o.id ? { ...e, ...patch } as El : e) }) });
+      setDoc({ ...doc, pages: doc.pages.map((pg, i) => i !== d.page ? pg : { ...pg, els: pg.els.map(e => e.id === o.id ? { ...e, ...patch } as El : e) }) });
     };
     const up = () => { const d = drag.current; if (d) { hist.current.past.push(d.snapshot); hist.current.future = []; } drag.current = null; setGuides([]); };
     window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
@@ -112,24 +116,82 @@ function DocEditor({ doc, docs, setDoc, props, b, openDoc, newDocFromGallery, de
         for (const i of idx) { const url = await renderPng(doc.pages[i].els, p, b, W, H, W > 1100 ? 1.5 : 2); download(await (await fetch(url)).blob(), `${safeName(doc.name)}${doc.pages.length > 1 ? '_p' + (i + 1) : ''}.png`); } }
     } catch (e) { alert('Export failed: ' + (e as Error).message); console.error(e); } setBusy('');
   };
-  const resize = (sid: string) => { const to = SIZES.find(s => s.id === sid)!; hist.current.past.push(doc.pages); setDoc({ ...doc, size: to, pages: doc.pages.map(pg => ({ els: fitEls(pg.els, doc.size, to) })), updated: Date.now() }); };
+  const resize = (sid: string) => { const to = SIZES.find(s => s.id === sid)!; hist.current.past.push(doc.pages); setDoc({ ...doc, size: to, pages: doc.pages.map(pg => ({ ...pg, els: fitEls(pg.els, doc.size, to) })), updated: Date.now() }); };
   const imgUpload = async (fl: FileList | null) => { const file = fl?.[0]; if (!file) return; const d = await fileToDataUrl(file); if (selEl?.type === 'image') upd({ src: d }); else add({ type: 'image', src: d, fit: 'cover', w: 320, h: 220 } as Partial<ImageEl> & { type: 'image' }); };
   const ovIds = new Set(Object.values(overflow).flat());
 
-  return <div className="design">
-    <aside className="left">
-      <button className="primary wide" onClick={newDocFromGallery}>+ New from template</button>
-      <DocList docs={docs} cur={doc.id} openDoc={openDoc} deleteDoc={deleteDoc} />
-      <h3>Page library</h3><p className="muted">Insert any page layout into this document (auto-fit to its size).</p>
-      <button className="wide" onClick={() => setLib(!lib)}>{lib ? 'Hide' : 'Show'} page library</button>
-      {lib && <div className="plib">{PAGES.map(pd => <div key={pd.id} className="plib-item" title={pd.name} onClick={() => commit([...doc.pages, makePage(pd.id, doc.size)])}>
-        <SvgPage els={fitEls(pd.make(), sizeOf(pd.size), doc.size)} p={p} b={b} w={W} h={H} scale={96 / Math.max(W, H)} editing={false} /><small>{pd.name}</small></div>)}</div>}
+  const pagesOf = (i: number, pg: Page) => { const a = [...doc.pages]; a[i] = pg; commit(a); };
+  const setOpts = (i: number, o: Record<string, any>) => pagesOf(i, rerenderPage({ ...doc.pages[i], opts: { ...doc.pages[i].opts, ...o } }, doc.size));
+  const resetPage = (i: number) => { const pg = doc.pages[i]; if (!pg.kind && !pg.def) { alert('This page was built by hand, so there is no layout to reset to.'); return; } if (confirm(`Reset "${pageName(pg, i)}" to its layout? Manual edits on this page are replaced.`)) pagesOf(i, rerenderPage(pg, doc.size)); };
+  const addPageAt = (pg: Page) => { const at = pageSel === null ? doc.pages.length : pageSel + 1; commit([...doc.pages.slice(0, at), pg, ...doc.pages.slice(at)]); setAdding(false); setPanel('pages'); setPageSel(at); setTimeout(() => svgRefs.current[at]?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); };
+  const movePage = (i: number, d: number) => { const j = i + d; if (j < 0 || j >= doc.pages.length) return; const a = [...doc.pages]; [a[i], a[j]] = [a[j], a[i]]; commit(a); if (pageSel === i) setPageSel(j); };
+  const goPage = (i: number) => { setPageSel(i); setSel(null); svgRefs.current[i]?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  const setRings = async (v: string) => { const rings = v.split(',').map(Number); updProp(p.id, x => ({ ...x, rings })); setBusy('Redrawing ring map…');
+    try { const img = await drawRetailMap({ ...p, rings }, b, { mode: 'rings', rings, siteLabel: 'SITE', H: 800 }); updProp(p.id, x => ({ ...x, ringMap: img }));
+      if (b.censusKey && p.lat) { setBusy('Fetching Census rings…'); const r = await ringDemographics(+p.lat, +p.lon, b.censusKey, rings); updProp(p.id, x => ({ ...x, dem: { ...x.dem, ...r.dem } })); }
+    } catch (e) { console.error(e); } setBusy(''); };
+  const insertImg = (src: string) => add({ type: 'image', src, fit: src === 'logo' || src === 'sitePlan' ? 'contain' : 'cover', w: 360, h: 240 } as Partial<ImageEl> & { type: 'image' });
+  const curPage = pageSel ?? sel?.page ?? 0;
+  const RAIL: [Panel, string, string][] = [['settings', '⚙', 'Settings'], ['pages', '▤', 'Pages'], ['blocks', '✚', 'Blocks'], ['images', '🖼', 'Images'], ['layers', '☰', 'Layers'], ['assist', '✎', 'Copy helper']];
+  return <div className="design railed">
+    <nav className="rail">{RAIL.map(([k, ic, l]) => <button key={k} className={panel === k ? 'on' : ''} title={l} onClick={() => { setPanel(k); if (k !== 'pages') setPageSel(null); }}><i>{ic}</i><span>{l}</span></button>)}</nav>
+    <aside className="left railpanel">
+      {panel === 'settings' && <>
+        <h3>Document settings</h3>
+        <label className="field"><span>Document name</span><input value={doc.name} onChange={e => setDoc({ ...doc, name: e.target.value })} /></label>
+        <label className="field"><span>Listing</span><select value={doc.propertyId} onChange={e => setDoc({ ...doc, propertyId: e.target.value })}>{props.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+        <label className="field"><span>Page size</span><select value={doc.size.id} onChange={e => resize(e.target.value)}>{SIZES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</select></label>
+        <label className="field"><span>Access</span><select value={doc.access || 'Private'} onChange={e => setDoc({ ...doc, access: e.target.value as Doc['access'] })}><option>Private</option><option>Team</option></select></label>
+        <button className="primary wide" onClick={newDocFromGallery}>+ New document</button>
+        <DocList docs={docs} cur={doc.id} openDoc={openDoc} deleteDoc={deleteDoc} />
+      </>}
+      {panel === 'pages' && pageSel === null && <>
+        <h3>Pages</h3>
+        <input className="wide" placeholder="Search pages…" value={pq} onChange={e => setPq(e.target.value)} />
+        <div className="pagelist">{doc.pages.map((pg, i) => ({ pg, i })).filter(({ pg, i }) => !pq || pageName(pg, i).toLowerCase().includes(pq.toLowerCase())).map(({ pg, i }) => <div key={i} className="pageitem" onClick={() => goPage(i)}>
+          <div className="pthumb"><SvgPage els={pg.els} p={p} b={b} w={W} h={H} scale={44 / Math.max(W, H)} editing={false} /></div>
+          <div className="pmeta"><b>{pageName(pg, i)}</b><small>{pg.kind ? 'Configurable' : pg.def ? 'Library layout' : 'Custom'} · page {i + 1}</small></div>
+          <span className="pbtns" onClick={e => e.stopPropagation()}><button className="sm" title="Move up" disabled={i === 0} onClick={() => movePage(i, -1)}>↑</button><button className="sm" title="Move down" disabled={i === doc.pages.length - 1} onClick={() => movePage(i, 1)}>↓</button>
+            <button className={'sm' + (pg.fav ? ' on' : '')} title="Favorite" onClick={() => pagesOf(i, { ...pg, fav: !pg.fav })}>{pg.fav ? '★' : '☆'}</button></span></div>)}</div>
+        <button className="primary wide" onClick={() => setAdding(true)}>+ Add page</button>
+      </>}
+      {panel === 'pages' && pageSel !== null && doc.pages[pageSel] && <PageOptions pg={doc.pages[pageSel]} i={pageSel} p={p} onBack={() => setPageSel(null)} rename={n => pagesOf(pageSel, { ...doc.pages[pageSel], name: n })}
+        setOpts={o => setOpts(pageSel, o)} setRings={setRings} reset={() => resetPage(pageSel)} />}
+      {panel === 'blocks' && <>
+        <h3>Blocks</h3><p className="muted">Adds to page {curPage + 1}. Text boxes accept {'{{fields}}'}.</p>
+        <div className="blockgrid">
+          <button onClick={() => add({ type: 'text', text: 'Heading', size: 22, font: '$body', color: '$dark', h: 36 } as Partial<TextEl> & { type: 'text' })}>Heading</button>
+          <button onClick={() => add({ type: 'text', text: 'Double-click to edit', size: 13, font: '$body', color: '$dark', h: 80 } as Partial<TextEl> & { type: 'text' })}>Paragraph</button>
+          <button onClick={() => add({ type: 'text', text: '{{highlights|bullets}}', size: 13, font: '$body', color: '$dark', indent: 13, paraGap: 4, h: 160 } as Partial<TextEl> & { type: 'text' })}>Highlights</button>
+          <button onClick={() => add({ type: 'table', rows: 'Sale Price:|{{salePrice}}\nLease Rate:|{{leaseRateIf}}\nAvailable SF:|{{availableSf}}\nBuilding Size:|{{buildingSf}}\nYear Built:|{{yearBuilt}}', override: 'details', cols: [1, 1], aligns: ['left', 'right'], size: 12, rowH: 22, font: '$body', color: '$dark', labelColor: '$dark', labelWeight: 400, rule: '$light', skipEmpty: true, w: 364, h: 110 } as Partial<TableEl> & { type: 'table' })}>Details table</button>
+          <button onClick={() => add({ type: 'table', rows: 'Suite|Size|Rate|Notes\n@units', header: true, cols: [2, 2, 2, 4], aligns: ['left', 'left', 'left', 'left'], size: 12, rowH: 24, font: '$body', color: '$dark', labelColor: '$dark', labelWeight: 700, headColor: '$primary', rule: '$light', w: 700, h: 120 } as Partial<TableEl> & { type: 'table' })}>Units table</button>
+          <button onClick={() => add({ type: 'table', rows: '@custom', cols: [1, 1], aligns: ['left', 'right'], size: 12, rowH: 22, font: '$body', color: '$dark', labelColor: '$dark', labelWeight: 400, rule: '$light', w: 364, h: 90 } as Partial<TableEl> & { type: 'table' })}>Custom fields</button>
+          <button onClick={() => add({ type: 'rect', fill: '$primary' })}>Shape</button>
+          <button onClick={() => add({ type: 'rect', fill: '$dark', h: 2, w: 744 })}>Rule</button>
+          <button onClick={() => insertImg('map')}>Map</button>
+        </div>
+        <h3>Page library</h3><p className="muted">Click to insert after the selected page.</p>
+        <div className="plib">{PAGES.map(pd => <div key={pd.id} className="plib-item" title={pd.name} onClick={() => addPageAt(makePage(pd.id, doc.size))}>
+          <SvgPage els={fitEls(pd.make(), sizeOf(pd.size), doc.size)} p={p} b={b} w={W} h={H} scale={96 / Math.max(W, H)} editing={false} /><small>{pd.name}</small></div>)}</div>
+      </>}
+      {panel === 'images' && <>
+        <h3>Images</h3><p className="muted">Click to place on page {curPage + 1}, or select an image element first to swap its picture.</p>
+        <div className="imggrid">{[...p.photos.map((ph, i) => ['photo:' + i, ph, 'Photo ' + (i + 1)]), ['aerial', p.aerial, 'Aerial'], ['retailMap', p.retailMap, 'Retailer map'], ['ringMap', p.ringMap, 'Ring map'], ['map', p.mapImg, 'Street map'], ['sitePlan', p.sitePlan, 'Site plan'], ['logo', b.logo, 'Logo']]
+          .map(([k, src, l]) => <button key={k} className="imgcell" disabled={!src} onClick={() => selEl?.type === 'image' ? upd({ src: k }) : insertImg(k)}>{src ? <img src={src} /> : <span className="muted">none</span>}<small>{l}</small></button>)}</div>
+        <label className="btn wide">Upload image…<input type="file" accept="image/*" hidden onChange={e => { imgUpload(e.target.files); e.target.value = ''; }} /></label>
+        <p className="muted">Draw suite outlines on photos in the listing's Property tab (✎ Annotate).</p>
+      </>}
+      {panel === 'layers' && <>
+        <h3>Layers · page {curPage + 1}</h3>
+        <div className="layers">{[...(doc.pages[curPage]?.els || [])].reverse().map(e => <div key={e.id} className={sel?.id === e.id ? 'on' : ''} onClick={() => setSel({ page: curPage, id: e.id })}>
+          {icon(e)} {e.name || label(e)}{e.locked ? ' 🔒' : ''}<button className="x" title={e.locked ? 'Unlock' : 'Lock'} onClick={ev => { ev.stopPropagation(); commit(doc.pages.map((pg, i) => i !== curPage ? pg : { ...pg, els: pg.els.map(x => x.id === e.id ? { ...x, locked: !x.locked } as El : x) })); }}>{e.locked ? '🔒' : '🔓'}</button></div>)}</div>
+      </>}
+      {panel === 'assist' && <CopyHelper p={p} b={b} updProp={f => updProp(p.id, f)} />}
     </aside>
+    {adding && <AddPageDialog onClose={() => setAdding(false)} onSmart={k => addPageAt(makeSmartPage(k, undefined, doc.size))} onLib={id => addPageAt(makePage(id, doc.size))} p={p} b={b} size={doc.size} />}
     <main className="center" ref={centerRef}>
       <div className="toolbar">
-        <input className="docname" value={doc.name} onChange={e => setDoc({ ...doc, name: e.target.value })} />
-        <select title="Property record" value={doc.propertyId} onChange={e => setDoc({ ...doc, propertyId: e.target.value })}>{props.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
-        <select title="Page size" value={doc.size.id} onChange={e => resize(e.target.value)}>{SIZES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</select>
+        <span className="crumb">{doc.name}</span>
         <span className="sep" />
         <button title="Text" onClick={() => add({ type: 'text', text: 'Double-click to edit', size: 20, font: '$body', color: '$dark', h: 60 } as Partial<TextEl> & { type: 'text' })}>T</button>
         <button title="Shape" onClick={() => add({ type: 'rect', fill: '$primary' })}>▭</button>
@@ -142,18 +204,25 @@ function DocEditor({ doc, docs, setDoc, props, b, openDoc, newDocFromGallery, de
         <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))}>−</button><span className="zoomv">{Math.round(zoom * 100)}%</span><button onClick={() => setZoom(z => Math.min(2, z + 0.1))}>+</button><button onClick={fit}>Fit</button>
         <span className="grow" />{busy && <span className="muted">{busy}</span>}
         <button onClick={() => dupDoc(doc)}>Duplicate</button>
-        <button className="primary" disabled={!!busy} onClick={() => doExport('pdf')}>Export PDF</button>
+        <button disabled={!!busy} onClick={() => doExport('pdf')}>Export PDF</button>
         <button disabled={!!busy} onClick={() => doExport('png-all')} title="PNG of every page">PNG</button>
+        <button onClick={() => goListing('property')} title="Edit the listing record behind this document">✎ Edit listing</button>
+        <button className="primary" onClick={() => goListing()} title="Back to the listing's documents">Done</button>
       </div>
       {ovIds.size > 0 && <div className="warn">⚠ {ovIds.size} text box(es) overflow — outlined in red. Enlarge them, shorten text or turn on Auto-fit.</div>}
       <div className="pages" onPointerDown={e => { if (e.target === e.currentTarget) { setSel(null); setEditing(null); } }}>
         {doc.pages.map((pg, pi) => <div key={pi} className="pagewrap">
-          <div className="pagelabel">Page {pi + 1} / {doc.pages.length}
-            <button className="sm" disabled={pi === 0} onClick={() => { const a = [...doc.pages]; [a[pi - 1], a[pi]] = [a[pi], a[pi - 1]]; commit(a); }}>↑</button>
-            <button className="sm" disabled={pi === doc.pages.length - 1} onClick={() => { const a = [...doc.pages]; [a[pi + 1], a[pi]] = [a[pi], a[pi + 1]]; commit(a); }}>↓</button>
-            <button className="sm" onClick={() => { const a = [...doc.pages]; a.splice(pi + 1, 0, { els: pg.els.map(e => ({ ...e, id: uid() })) }); commit(a); }}>duplicate</button>
-            <button className="sm" onClick={() => commit([...doc.pages.slice(0, pi + 1), { els: [] }, ...doc.pages.slice(pi + 1)])}>+ blank</button>
-            {doc.pages.length > 1 && <button className="sm danger" onClick={() => confirm('Delete page ' + (pi + 1) + '?') && commit(doc.pages.filter((_, i) => i !== pi))}>delete</button>}</div>
+          <div className={'pagebar' + (pageSel === pi ? ' on' : '')}>
+            <button className="pname" title="Page options" onClick={() => { setPanel('pages'); setPageSel(pi); setSel(null); }}>▤ {pageName(pg, pi)}</button>
+            <button className="sm" title="Page options" onClick={() => { setPanel('pages'); setPageSel(pi); setSel(null); }}>⚙</button>
+            <button className="sm" title="Move up" disabled={pi === 0} onClick={() => movePage(pi, -1)}>↑</button>
+            <button className="sm" title="Move down" disabled={pi === doc.pages.length - 1} onClick={() => movePage(pi, 1)}>↓</button>
+            <button className="sm" title="Duplicate page" onClick={() => { const a = [...doc.pages]; a.splice(pi + 1, 0, { ...pg, name: pageName(pg, pi) + ' copy', els: pg.els.map(e => ({ ...e, id: uid() })) }); commit(a); }}>⧉</button>
+            <button className={'sm' + (pg.fav ? ' on' : '')} title="Favorite" onClick={() => pagesOf(pi, { ...pg, fav: !pg.fav })}>{pg.fav ? '★' : '☆'}</button>
+            <button className="sm" title="Reset page to its layout" onClick={() => resetPage(pi)}>↺</button>
+            <button className="sm" title="Insert blank page after" onClick={() => commit([...doc.pages.slice(0, pi + 1), { els: [], name: 'Blank page' }, ...doc.pages.slice(pi + 1)])}>+</button>
+            {doc.pages.length > 1 && <button className="sm danger" title="Delete page" onClick={() => confirm('Delete page ' + (pi + 1) + '?') && commit(doc.pages.filter((_, i) => i !== pi))}>✕</button>}
+            <span className="muted">{pi + 1} / {doc.pages.length}</span></div>
           <div className="sheet" ref={el => { svgRefs.current[pi] = el; }} style={{ width: W * zoom, height: H * zoom }}>
             <div className="export-wrap"><SvgPage els={pg.els} p={p} b={b} w={W} h={H} scale={zoom} editing={true} onOverflow={ids => setOverflow(o => (o[pi] || []).join() === ids.join() ? o : { ...o, [pi]: ids })} /></div>
             <div className="overlay" style={{ width: W, height: H, transform: `scale(${zoom})` }} onPointerDown={e => { if (e.target === e.currentTarget) { setSel(null); setEditing(null); } }}>
@@ -169,12 +238,12 @@ function DocEditor({ doc, docs, setDoc, props, b, openDoc, newDocFromGallery, de
               {guides.map((g, i) => g.x !== undefined ? <div key={i} className="guide v" style={{ left: g.x, width: 1 / zoom }} /> : <div key={i} className="guide h" style={{ top: g.y, height: 1 / zoom }} />)}
             </div>
           </div></div>)}
-        <button className="addpage" onClick={() => setLib(true)}>+ Add page from library</button>
+        <button className="addpage" onClick={() => setAdding(true)}>+ Add page</button>
       </div>
     </main>
     <aside className="right">
       {!selEl ? <Help /> : <Inspector el={selEl} b={b} p={p} upd={upd} del={del} dup={() => dup()} order={order} alignTo={alignTo} imgUpload={imgUpload} edit={() => setEditing(selEl.id)} />}
-      {sel && <><h4>Layers · page {sel.page + 1}</h4><div className="layers">{[...doc.pages[sel.page].els].reverse().map(e => <div key={e.id} className={e.id === sel.id ? 'on' : ''} onClick={() => setSel({ page: sel.page, id: e.id })}>
+      {sel && panel !== 'layers' && <><h4>Layers · page {sel.page + 1}</h4><div className="layers">{[...doc.pages[sel.page].els].reverse().map(e => <div key={e.id} className={e.id === sel.id ? 'on' : ''} onClick={() => setSel({ page: sel.page, id: e.id })}>
         {icon(e)} {e.name || label(e)}{e.locked ? ' 🔒' : ''}</div>)}</div></>}
     </aside>
   </div>;
