@@ -44,8 +44,70 @@ const saleRows = 'Sale Price:|{{price}}\nCap Rate:|{{capRate}}\nNOI:|{{noi}}\nBu
 const anyRows = 'Sale Price:|{{price}}\n' + leaseRows;
 
 // ----- page builders -----
+
+// ----- "Signature" family: clean white page, serif accents, navy title, broker strip + logo bottom right -----
+const SIG_LH = 17 / 12;
+const sigHeader = (pg: string): El[] => [
+  T(36, 36.4, 560, 38, '{{name}}', { font: '$body', size: 30, color: '$primary', lh: 1.2, ls: -0.6, autoFit: true, name: 'title' }),
+  T(36, 74.2, 560, 18, '{{subtitle}}', { font: '$body', size: 14, color: '$dark', lh: 1.2, autoFit: true, name: 'subtitle' }),
+  T(560, 35.9, 220, 36, '{{forLabel}}', { font: '$head', size: 26, color: '$primary', align: 'right', lh: 1.333, autoFit: true, name: 'listing label' }),
+  T(600, 998.2, 180, 18, pg, { font: '$body', size: 14, color: '#929091', align: 'right', lh: 1.2, name: 'page number' }),
+];
+const sigBroker = (n: number): El[] => {
+  const f = { showIf: `{{broker${n}Name}}`, flow: 'sigbrokers', flowIdx: n, flowGap: 12.5 };
+  return [
+    T(36, 921.5, 200, 24, `{{broker${n}Name}}`, { font: '$head', size: 18, color: '$primary', lh: 1.333, ...f }),
+    T(36, 946.2, 200, 32, `{{broker${n}Email}}\n{{broker${n}Phone}}`, { font: '$body', size: 11, color: '$dark', lh: 15 / 11, ...f }),
+    R(240, 924, 1, 52, '$secondary', { ...f, flowEnd: 7 }),
+  ];
+};
+const sigFooter = (): El[] => [
+  ...sigBroker(1), ...sigBroker(2), ...sigBroker(3),
+  I(640, 930, 140, 40, 'logo', { fit: 'contain', fx: 1, name: 'logo right' }),
+  T(36, 996.1, 632, 26, '{{disclaimer}}', { font: '$body', size: 10, color: '#929091', lh: 1.2, ls: 1.7, autoFit: true, name: 'disclaimer' }),
+];
+const SIG_DETAILS = 'Sale Price:|{{salePrice}}\nLease Rate:|{{leaseRateIf}}\nLease Type:|{{leaseTypeIf}}\nAvailable:|{{availableSf}}\nLot Size:|{{lotAcres}}\nBuilding Size:|{{buildingSf}}\nClass:|{{buildingClass}}\nParking:|{{parking}}\nZoning:|{{zoning}}\nYear Built:|{{yearBuilt}}\nTraffic Count:|{{traffic}}';
+const sigHead = (x: number, y: number, text: string, o: Partial<N<TextEl>> = {}): El => T(x, y, 360, 30, text, { font: '$body', size: 24, color: '$dark', lh: 1.2, ...o });
+const sigBullets = (y: number, text: string, h: number, o: Partial<N<TextEl>> = {}): El =>
+  T(41, y, 359, h, text, { font: '$body', size: 12, color: '$dark', lh: SIG_LH, indent: 15, paraGap: 5, ...o });
 export type PageDef = { id: string; name: string; size: string; make: () => El[] };
 const P: PageDef[] = [
+  { id: 'sig-overview', name: 'Signature · Overview', size: 'letter', make: () => {
+    const st = (i: number, grow = false, showIf?: string) => ({ stack: 'left', stackIdx: i, stackGrow: grow, stackMax: 905, ...(showIf ? { showIf } : {}) });
+    return [
+      ...sigHeader('1'),
+      I(36, 132, 744, 340, 'photo:0', { name: 'hero' }),
+      sigHead(36, 505.3, 'Details', st(0)),
+      TB(36, 543.9, 364, 92, SIG_DETAILS, { ...st(1, true), size: 12, rowH: 23, cols: [1, 1], labelWeight: 400, labelColor: '$dark', color: '$dark', rule: '$light', ruleW: 1, font: '$body' }),
+      sigHead(36, 635.3, 'Highlights', { ...st(2, false, '{{highlights}}') }),
+      sigBullets(672.9, '{{highlights|bullets}}', 40, { ...st(3, true, '{{highlights}}'), stackGap: 48 }),
+      sigHead(36, 719, 'Location Description', { ...st(4, false, '{{locationDescription}}') }),
+      sigBullets(755.6, '{{locationDescription|bullets}}', 40, { ...st(5, true, '{{locationDescription}}'), stackGap: 48 }),
+      sigHead(416, 505.3, 'Overview'),
+      T(416, 543.9, 354, 330, '{{description}}', { font: '$body', size: 12, color: '$dark', lh: SIG_LH, align: 'justify', autoFit: true, name: 'overview' }),
+      ...sigFooter()];
+  } },
+  { id: 'sig-photos5', name: 'Signature · Photos (2 + 3)', size: 'letter', make: () => [
+    ...sigHeader('2'),
+    I(36, 132, 364, 351, 'photo:1'), I(416, 132, 364, 351, 'photo:2'),
+    I(36, 499, 237, 351, 'photo:3'), I(289, 499, 238, 351, 'photo:4'), I(543, 499, 237, 351, 'photo:5'),
+    ...sigFooter()] },
+  { id: 'sig-photos6', name: 'Signature · Photos (2 × 3)', size: 'letter', make: () => [
+    ...sigHeader('3'),
+    ...[132, 377, 621].flatMap((y, r) => [I(36, y, 364, 229, `photo:${1 + r * 2}`), I(416, y, 364, 229, `photo:${2 + r * 2}`)]),
+    ...sigFooter()] },
+  { id: 'sig-plans', name: 'Signature · Site plan', size: 'letter', make: () => [
+    ...sigHeader('2'), I(36, 132, 744, 718, 'sitePlan', { fit: 'contain' }), ...sigFooter()] },
+  { id: 'sig-maps', name: 'Signature · Maps', size: 'letter', make: () => [
+    ...sigHeader('4'), I(36, 132, 744, 351, 'map'), I(36, 499, 744, 351, 'aerial'), ...sigFooter()] },
+  { id: 'sig-retail', name: 'Signature · Co-tenancy & demographics', size: 'letter', make: () => [
+    ...sigHeader('3'), I(36, 132, 744, 440, 'retailMap'),
+    sigHead(36, 592, 'Demographics'),
+    TB(36, 632, 744, 200, 'Radius|1 Mile|3 Miles|5 Miles\nPopulation|{{dem_pop1}}|{{dem_pop3}}|{{dem_pop5}}\nPopulation Growth|{{dem_growth1}}|{{dem_growth3}}|{{dem_growth5}}\nHouseholds|{{dem_hh1}}|{{dem_hh3}}|{{dem_hh5}}\nMedian HH Income|{{dem_med1}}|{{dem_med3}}|{{dem_med5}}\nAverage HH Income|{{dem_inc1}}|{{dem_inc3}}|{{dem_inc5}}\nDaytime Population|{{dem_day1}}|{{dem_day3}}|{{dem_day5}}',
+      { cols: [2, 1, 1, 1], aligns: ['left', 'right', 'right', 'right'], header: true, headColor: '$primary', headWeight: 700, size: 12, rowH: 24, labelWeight: 400, labelColor: '$dark', rule: '$light', font: '$body', skipEmpty: true }),
+    T(36, 860, 744, 30, 'Sources: U.S. Census Bureau ACS 5-year (2023; growth vs. 2019) by block group within each radius. Retailers © OpenStreetMap contributors.', { font: '$body', size: 9, color: '#777777', lh: 1.3 }),
+    ...sigFooter()] },
+
   { id: 'classic-summary-left', name: 'Classic Band · Summary left', size: 'letter', make: () => [
     ...classicHeader(), I(0, 150, W, 383, 'photo:0', { name: 'hero photo' }),
     ...offering(35, 549, anyRows, 360),
@@ -220,6 +282,10 @@ const P: PageDef[] = [
 export const PAGES = P;
 export type Template = { id: string; name: string; desc: string; size: string; pages: string[]; tags: string[] };
 export const TEMPLATES: Template[] = [
+  { id: 'sig-flyer', name: 'Signature Flyer', desc: 'Hero · details · overview · photo page', size: 'letter', pages: ['sig-overview', 'sig-photos5'], tags: ['lease', 'sale', 'office', 'industrial'] },
+  { id: 'sig-brochure', name: 'Signature Brochure', desc: 'Overview · site plan · photos · maps', size: 'letter', pages: ['sig-overview', 'sig-plans', 'sig-photos6', 'sig-maps'], tags: ['lease', 'sale', 'office'] },
+  { id: 'sig-retail', name: 'Signature Retail', desc: 'Overview · co-tenancy map · 1/3/5-mile demographics', size: 'letter', pages: ['sig-overview', 'sig-retail', 'sig-photos6'], tags: ['retail', 'lease', 'sale'] },
+
   { id: 'classic-lease', name: 'Classic Band Flyer', desc: 'Summary left · photos · aerial', size: 'letter', pages: ['classic-summary-left', 'classic-photos', 'classic-aerial'], tags: ['lease', 'sale'] },
   { id: 'classic-office', name: 'Classic Band · Highlights', desc: 'Description + highlights, summary right', size: 'letter', pages: ['classic-summary-right', 'classic-photos'], tags: ['lease', 'office'] },
   { id: 'classic-demo', name: 'Classic Band · Demographics', desc: 'Photo, highlights, 1/3/5-mile table', size: 'letter', pages: ['classic-demographics', 'classic-photos'], tags: ['lease', 'retail'] },

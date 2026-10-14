@@ -20,8 +20,10 @@ export function context(p: Property, b: Brand): Record<string, string> {
   p.brokers.forEach((br, i) => { for (const [k, v] of Object.entries(br)) c[`broker${i + 1}${k[0].toUpperCase()}${k.slice(1)}`] = v; });
   c.cityStateZip = [p.city, [p.state, p.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
   c.fullAddress = [p.address, c.cityStateZip].filter(Boolean).join(', ');
+  c.subtitle = p.subtitle || c.fullAddress;
   c.forLabel = p.listing === 'Sale' ? 'For Sale' : p.listing === 'Lease' ? 'For Lease' : 'For Sale or Lease';
   c.priceOrRate = p.listing === 'Lease' ? p.leaseRate : p.price;
+  c.salePrice = p.listing === 'Lease' ? '' : p.price; c.leaseRateIf = p.listing === 'Sale' ? '' : p.leaseRate; c.leaseTypeIf = p.listing === 'Sale' ? '' : p.leaseType;
   c.availableSuites = p.suites.filter(s => !/leased/i.test(s.status)).length + '';
   arraysToContext(p, c);
   return c;
@@ -57,23 +59,29 @@ export function measure(str: string, font: string, weight: number, size: number,
   return mctx.measureText(str).width + ls * Math.max(0, [...str].length);
 }
 type Line = { words: string[]; prefix?: string; indent: number; last: boolean };
-function wrap(text: string, maxW: number, m: (s: string) => number): Line[] {
+function wrap(text: string, maxW: number, m: (s: string) => number, hang?: number): Line[] {
   const out: Line[] = [];
   for (const para of text.split('\n')) {
     const bullet = /^(•|-)\s+/.exec(para); const prefix = bullet ? bullet[1] : undefined;
-    const indent = bullet ? m(prefix + '  ') : 0; const body = bullet ? para.slice(bullet[0].length) : para;
+    const indent = bullet ? (hang ?? m(prefix + '  ')) : 0; const body = bullet ? para.slice(bullet[0].length) : para;
     const words = body.split(/ +/).filter(w => w.length); if (!words.length) { out.push({ words: [], indent: 0, last: true }); continue; }
     let cur: string[] = []; let first = true;
-    for (const w of words) {
+    for (let w of words) {
       const trial = [...cur, w].join(' ');
-      if (cur.length && m(trial) > maxW - indent) { out.push({ words: cur, prefix: first ? prefix : undefined, indent, last: false }); cur = [w]; first = false; }
+      if (cur.length && m(trial) > maxW - indent) {
+        // break after a hyphen inside the word when its first part still fits (e.g. "33,417-square-|foot")
+        const hy = [...w.matchAll(/-(?=[^-])/g)].map(x => x.index! + 1).reverse().find(i => m([...cur, w.slice(0, i)].join(' ')) <= maxW - indent);
+        if (hy) { cur.push(w.slice(0, hy)); w = w.slice(hy); }
+        out.push({ words: cur, prefix: first ? prefix : undefined, indent, last: false }); cur = [w]; first = false;
+      }
       else cur.push(w);
     }
     out.push({ words: cur, prefix: first ? prefix : undefined, indent, last: true });
   }
   return out;
 }
-export type TextLayout = { size: number; lines: { x: number; y: number; str: string }[]; overflow: boolean };
+export type TextLayout = { size: number; lines: { x: number; y: number; str: string }[]; overflow: boolean; height: number };
+const heightOf = (lines: Line[], lh: number, gap: number) => lines.length * lh + Math.max(0, lines.filter(l => l.last).length - 1) * gap;
 export function layoutText(el: TextEl, text: string, b: Brand): TextLayout {
   const font = fontOf(el.font, b); const weight = pickWeight(font, el.weight); const met = FONTS[font] || FONTS['Open Sans'];
   const pad = el.pad ?? 0; const W = el.w - pad * 2, H = el.h - pad * 2; const s = el.upper ? text.toUpperCase() : text;
@@ -81,17 +89,18 @@ export function layoutText(el: TextEl, text: string, b: Brand): TextLayout {
   const lsOf = (sz: number) => (el.ls ?? 0) * sz / 100; // letter spacing in 1/100 em
   for (; ;) {
     const ls = lsOf(size); const m = (x: string) => measure(x, font, weight, size, ls, el.italic);
-    lines = wrap(s, W, m); lh = size * (el.lh ?? 1.25);
+    lines = wrap(s, W, m, el.indent); lh = size * (el.lh ?? 1.25);
     const tooWide = lines.some(l => l.words.length === 1 && m(l.words[0]) > W - l.indent + 0.5);
-    if (!el.autoFit || size <= 5 || (lines.length * lh <= H + 0.5 && !tooWide)) break;
+    if (!el.autoFit || size <= 5 || (heightOf(lines, lh, el.paraGap ?? 0) <= H + 0.5 && !tooWide)) break;
     size = Math.max(5, size - 0.5);
   }
   const ls = lsOf(size); const m = (x: string) => measure(x, font, weight, size, ls, el.italic);
-  const total = lines.length * lh; const top = el.y + pad + (el.valign === 'middle' ? (H - total) / 2 : el.valign === 'bottom' ? H - total : 0);
+  const gap = el.paraGap ?? 0; const total = heightOf(lines, lh, gap); const top = el.y + pad + (el.valign === 'middle' ? (H - total) / 2 : el.valign === 'bottom' ? H - total : 0);
   const base = (lh - (met.asc + met.desc) * size) / 2 + met.asc * size;
   const out: TextLayout['lines'] = []; const x0 = el.x + pad; const al: Align = el.align || 'left';
-  lines.forEach((l, i) => {
-    const y = top + i * lh + base; const str = l.words.join(' ');
+  let yo = 0;
+  lines.forEach((l) => {
+    const y = top + yo + base; yo += lh + (l.last ? gap : 0); const str = l.words.join(' ');
     if (l.prefix) out.push({ x: x0, y, str: l.prefix });
     const avail = W - l.indent; const lw = m(str); const lx = x0 + l.indent;
     if (al === 'justify' && !l.last && l.words.length > 1) {
@@ -99,7 +108,7 @@ export function layoutText(el: TextEl, text: string, b: Brand): TextLayout {
       l.words.forEach((w, j) => { out.push({ x, y, str: w }); x += ws[j] + gap; });
     } else if (str) out.push({ x: al === 'center' ? lx + (avail - lw) / 2 : al === 'right' ? lx + avail - lw : lx, y, str });
   });
-  return { size, lines: out, overflow: total > H + 0.5 };
+  return { size, lines: out, overflow: total > H + 0.5, height: total + pad * 2 };
 }
 
 // ---------- images ----------
@@ -136,20 +145,58 @@ function applyFlow(els: El[], c: Record<string, string>, b: Brand): El[] {
       const minX: number = Math.min(...col.map(e => e.x)); const dx: number = nextX === null ? 0 : nextX - minX;
       let right = minX;
       for (const e of col) {
+        if (e.flowEnd != null) continue;
         shift.set(e, dx);
         if (e.type === 'text') {
           const font = fontOf(e.font, b); const w = pickWeight(font, e.weight); const L = layoutText({ ...e, w: 2000 }, resolve(e.text, c), b);
           for (const l of L.lines) right = Math.max(right, e.x + measure(l.str, font, w, L.size, (e.ls ?? 0) * L.size / 100, e.italic));
         } else right = Math.max(right, e.x + e.w);
       }
-      nextX = right + dx + (col[0].flowGap ?? 20);
+      let r2 = right;
+      for (const e of col) if (e.flowEnd != null) { shift.set(e, right + e.flowEnd - e.x + dx); r2 = Math.max(r2, right + e.flowEnd + e.w); }
+      nextX = r2 + dx + (col[0].flowGap ?? 20);
     }
   }
   return els.map(e => shift.has(e) && shift.get(e) ? { ...e, x: e.x + shift.get(e)! } as El : e);
 }
+// Vertical stacks: elements sharing `stack` are ordered by stackIdx. A `stackGrow` element measures its real
+// content height; everything later in the stack moves by (actual - declared h). Hidden grow elements remove
+// their slot (h + stackGap).
+function applyStack(els: El[], c: Record<string, string>, b: Brand): El[] {
+  const groups = new Map<string, El[]>();
+  for (const e of els) if (e.stack) { if (!groups.has(e.stack)) groups.set(e.stack, []); groups.get(e.stack)!.push(e); }
+  if (!groups.size) return els;
+  const repl = new Map<El, El>();
+  for (const g0 of groups.values()) {
+    const limit = Math.max(0, ...g0.map(e => e.stackMax ?? 0)) || Infinity;
+    let g = g0.map(e => ({ ...e }) as El);
+    const measure = (e: El): number => {
+      const hidden = !!(e.showIf && !resolve(e.showIf, c).trim());
+      if (hidden) return -(e.stackGap ?? 0);
+      if (e.type === 'table') return drawTable(e, c, b, [], { rot: 0, cx: 0, cy: 0, opacity: 1 });
+      if (e.type === 'text') { const t = resolve(e.text, c); return t.trim() ? layoutText({ ...e, h: 99999, autoFit: false }, t, b).height : -(e.stackGap ?? 0); }
+      return e.h;
+    };
+    const run = () => {
+      const idxs = [...new Set(g.map(e => e.stackIdx ?? 0))].sort((a, b2) => a - b2); let acc = 0; let bottom = 0;
+      const out = new Map<El, number>(); const hs = new Map<El, number>();
+      for (const i of idxs) {
+        const items = g.filter(e => (e.stackIdx ?? 0) === i); items.forEach(e => out.set(e, acc));
+        for (const e of items.filter(x => x.stackGrow)) { const a = measure(e); hs.set(e, a); acc += a - e.h; if (a > 0) bottom = Math.max(bottom, e.y + out.get(e)! + a); }
+      }
+      return { out, bottom, hs };
+    };
+    let r = run();
+    // too tall: tighten table rows, then shrink the text blocks
+    for (let k = 0; r.bottom > limit && k < 6; k++) { g = g.map(e => e.type === 'table' && e.stackGrow ? { ...e, rowH: Math.max(e.size * 1.5, e.rowH - 2) } : e); r = run(); }
+    for (let k = 0; r.bottom > limit && k < 12; k++) { g = g.map(e => e.type === 'text' && e.stackGrow ? { ...e, size: Math.max(9.5, e.size - 0.5) } : e); r = run(); }
+    g.forEach((e, i) => { const h = r.hs.get(e); repl.set(g0[i], { ...e, y: e.y + (r.out.get(e) ?? 0), ...(h && h > 0 ? { h: h + 1 } : {}) } as El); });
+  }
+  return els.map(e => repl.get(e) ?? e);
+}
 export function compilePage(els0: El[], p: Property, b: Brand, editing: boolean): Compiled {
   const c = context(p, b); const prims: Prim[] = []; const imgs: ImgReq[] = []; const overflow: string[] = [];
-  const els = applyFlow(els0, c, b);
+  const els = applyStack(applyFlow(els0, c, b), c, b);
   for (const el of els) {
     if (el.showIf && !resolve(el.showIf, c).trim()) continue;
     const xf: Xf = { rot: el.rot || 0, cx: el.x + el.w / 2, cy: el.y + el.h / 2, opacity: el.opacity ?? 1 };
@@ -184,7 +231,7 @@ function compileTable(el: TableEl, c: Record<string, string>, b: Brand, prims: P
   const tries: [number, number][] = [[el.rowGap ?? 0, el.rowH], [0, el.rowH], [0, Math.max(el.size * 1.6, el.rowH * 0.85)], [0, el.size * 1.45]];
   for (let i = 0; i < tries.length; i++) {
     const local: Prim[] = []; const hgt = drawTable({ ...el, rowGap: tries[i][0], rowH: tries[i][1] }, c, b, local, xf);
-    if (hgt <= el.h + 1 || i === tries.length - 1) { prims.push(...local); return; }
+    if (el.stackGrow || hgt <= el.h + 1 || i === tries.length - 1) { prims.push(...local); return; }
   }
 }
 function drawTable(el: TableEl, c: Record<string, string>, b: Brand, prims: Prim[], xf: Xf): number {
@@ -204,7 +251,7 @@ function drawTable(el: TableEl, c: Record<string, string>, b: Brand, prims: Prim
       return { t, L: layoutText(t, t.text, b) };
     });
     const nLines = Math.max(1, ...cells.map(x => new Set(x.L.lines.map(l => l.y)).size));
-    const rh = Math.max(el.rowH, nLines * el.size * 1.25 + 10);
+    const rh = Math.max(el.rowH, nLines * el.size * 1.25 + (nLines > 1 ? 10 : 0));
     if (isHead && el.headFill) prims.push({ k: 'rect', x: el.x, y, w: el.w, h: rh, fill: color(el.headFill, b), xf });
     else if (el.zebra && ri % 2 === 0) prims.push({ k: 'rect', x: el.x, y, w: el.w, h: rh, fill: color(el.zebra, b), xf });
     cells.forEach(({ t, L }, ci) => {

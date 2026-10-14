@@ -25,8 +25,8 @@ export const newProperty = (o: Partial<Property> = {}): Property => ({
     { name: 'Penn Square Tower', address: '1900 NW Expwy', date: '07/2025', price: '$6,750,000', sf: '82,000', ppsf: '$82.32', cap: '6.8%', notes: '' }],
   photos: [], mapImg: '', sitePlan: '', aerial: '', ...o,
 });
-export const defaultBrand: Brand = { company: 'Your Company', tagline: 'Commercial Real Estate', primary: '#007359', secondary: '#002e5a', accent: '#409682', dark: '#1f2a37', light: '#d5ebe5',
-  logo: '', logoLight: '', headFont: 'Jost', bodyFont: 'Nunito Sans', website: 'www.example.com', phone: '405.555.0100',
+export const defaultBrand: Brand = { company: 'Your Company', tagline: 'Commercial Real Estate', primary: '#003057', secondary: '#05664f', accent: '#3f8f7b', dark: '#272324', light: '#faf7e8',
+  logo: '', logoLight: '', headFont: 'Playfair Display', bodyFont: 'Lato', website: 'www.example.com', phone: '405.555.0100',
   disclaimer: 'The information contained herein is from sources deemed reliable. No representation is made to the accuracy herein. Photos herein are the property of their respective owners, and use of them without express written consent of the owner is prohibited.', censusKey: '' };
 export function freshState(): State { const p = newProperty(); return { v: 2, properties: [p], activePropertyId: p.id, brand: defaultBrand, docs: [] }; }
 export async function loadState(): Promise<State> {

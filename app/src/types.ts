@@ -4,7 +4,7 @@ export type Poi = { id: string; name: string; kind: 'draw' | 'anchor' | 'retail'
 export type TrafficPt = { id: string; label: string; value: number; year?: string; source?: string; lat: number; lon: number; on: boolean };
 export type Property = {
   id: string;
-  name: string; address: string; city: string; state: string; zip: string;
+  name: string; subtitle?: string; address: string; city: string; state: string; zip: string;
   propType: string; listing: 'Sale' | 'Lease' | 'Sale or Lease'; price: string; leaseRate: string; leaseType: string;
   buildingSf: string; availableSf: string; officeSf: string; lotAcres: string; yearBuilt: string; zoning: string; parking: string; clearHeight: string;
   buildingClass: string; market: string; traffic: string; capRate: string; noi: string;
@@ -19,9 +19,9 @@ export type Property = {
 export type Brand = { company: string; tagline: string; primary: string; secondary: string; accent: string; dark: string; light: string;
   logo: string; logoLight: string; headFont: string; bodyFont: string; website: string; phone: string; disclaimer: string; censusKey: string };
 export type Align = 'left' | 'center' | 'right' | 'justify';
-export type ElBase = { id: string; showIf?: string; flow?: string; flowIdx?: number; flowGap?: number; x: number; y: number; w: number; h: number; rot?: number; opacity?: number; locked?: boolean; name?: string };
+export type ElBase = { id: string; showIf?: string; flow?: string; flowIdx?: number; flowGap?: number; flowEnd?: number; stack?: string; stackIdx?: number; stackGrow?: boolean; stackGap?: number; stackMax?: number; x: number; y: number; w: number; h: number; rot?: number; opacity?: number; locked?: boolean; name?: string };
 export type TextEl = ElBase & { type: 'text'; text: string; font?: string; weight?: number; size: number; color?: string; align?: Align; valign?: 'top' | 'middle' | 'bottom';
-  lh?: number; ls?: number; upper?: boolean; autoFit?: boolean; fill?: string; pad?: number; italic?: boolean };
+  lh?: number; ls?: number; upper?: boolean; autoFit?: boolean; fill?: string; pad?: number; italic?: boolean; indent?: number; paraGap?: number };
 export type RectEl = ElBase & { type: 'rect'; fill?: string; stroke?: string; sw?: number; radius?: number };
 export type ImageEl = ElBase & { type: 'image'; src: string; fit?: 'cover' | 'contain'; fx?: number; fy?: number; zoom?: number; radius?: number; gray?: boolean; tint?: string; tintAlpha?: number; stroke?: string; sw?: number };
 export type TableEl = ElBase & { type: 'table'; rows: string; source?: 'rows' | 'suites' | 'comps'; cols: number[]; aligns: Align[]; header?: boolean;
